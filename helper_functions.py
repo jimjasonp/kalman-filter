@@ -812,7 +812,7 @@ y einai to normalized amplitude kai o x einai h suxnothta
 
 '''
 
-def bar_res_plot(model_list,min,mid,max,name_list):
+def bar_res_plot(model_list,min,mid,max,name_list,mode):
     
     
     import numpy as np
@@ -835,8 +835,12 @@ def bar_res_plot(model_list,min,mid,max,name_list):
     
     plt.xticks(X_axis, name_list)
     plt.xlabel("Models")
-    plt.ylabel("Mean absolute Percentage error")
-    plt.title(f"MAPE of models with different training sizes ")
+    if mode =='regression':
+        plt.ylabel("Mean absolute Percentage error")
+        plt.title(f"MAPE of models with different training sizes ")
+    if mode =='classification':
+        plt.ylabel("Accuracy")
+        plt.title(f"Accuracy of models with different training sizes ")
     plt.legend() 
     plt.show()
 
@@ -982,7 +986,45 @@ check gia na ta prosthesw
 
 '''
 
+def data_mixer(X_1,y_1,X_2,y_2,first_percentage,second_percentage,target_value):
+    from sklearn.model_selection import train_test_split
+    import numpy as np
+    if first_percentage == 1:
+        X_1_half = X_1
+        y_1_half = y_1        
+    else:
+        X_1_half, X_drop, y_1_half, y_drop = train_test_split(X_1, y_1, test_size=1-first_percentage,shuffle=True)
+    
+    if second_percentage ==1:
+        X_2_half = X_2
+        y_2_half = y_2
+    else:
+        X_2_half, X_drop, y_2_half, y_drop = train_test_split(X_2, y_2, test_size=1-second_percentage,shuffle=True)
+    
+    X_train = np.concatenate((X_1_half,X_2_half),axis=0)
+    y_train = np.concatenate((y_1_half,y_2_half),axis=0)
+    return X_train,y_train
 
+
+def confusion_matrix_display(y_true,y_pred,model,mode):
+    import matplotlib.pyplot as plt
+    from sklearn.metrics import confusion_matrix,ConfusionMatrixDisplay
+
+   
+    if model.__name__ =='svc' : name = 'Support Vector Machines'
+    if model.__name__ =='knn' : name = 'K Nearest Neighbors'
+    if model.__name__ =='logistic_regression' : name = 'Logistic Regression'
+
+    cm = confusion_matrix(y_true,y_pred)
+    disp = ConfusionMatrixDisplay(cm)
+    disp.plot()
+    plt.title(f'Confusion matrix of {name}')
+    if mode=='save':
+        plt.savefig(f'{name}_confusion_matrix.png')
+        plt.close('all')
+        plt.clf()
+    elif mode =='show':
+        plt.show()
 
 def pickle_saver(model):
     
@@ -1051,8 +1093,24 @@ def grid_search_loo(model,X_train,y_train):
 
 
 
+def regression_model_run(model,X_train,y,X_test,y_true):
+    
+    from sklearn.metrics import mean_absolute_percentage_error,mean_absolute_error
 
+    y_pred = model(X_train,y,X_test)
+    #print(y_pred)
+    mape = 100*mean_absolute_percentage_error(y_true,y_pred)
+    mae = mean_absolute_error(y_true,y_pred)
+    return mae,mape,y_true,y_pred
 
+def classification_model_run(model,X_train,y,X_test,y_true):
+
+    from sklearn.metrics import accuracy_score
+    y_pred = model(X_train,y,X_test)
+    #print(y_pred)
+    acc = 100*accuracy_score(y_true,y_pred)
+    acc = accuracy_score(y_true,y_pred)
+    return acc,y_true,y_pred
 
 ########################################################
 ########################################################
@@ -1077,15 +1135,7 @@ def single_model_result_plot(model,X_train,y,X_test,y_true):
     plt.show()
 
 
-def regression_model_run(model,X_train,y,X_test,y_true):
 
-    from sklearn.metrics import mean_absolute_percentage_error,mean_absolute_error
-
-    y_pred = model(X_train,y,X_test)
-    #print(y_pred)
-    mape = 100*mean_absolute_percentage_error(y_true,y_pred)
-    mae = mean_absolute_error(y_true,y_pred)
-    return mae,mape,y_true,y_pred
 
 
 def x_y_unwanted_remover(sensor2,sensor3,sensor4,y):

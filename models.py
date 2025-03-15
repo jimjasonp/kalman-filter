@@ -12,8 +12,6 @@ def decision_tree_reg(X_train,y,X_test):
     dt = DecisionTreeRegressor()
     dt.fit(X_train,y)
     y_pred = dt.predict(X_test)
-    with open('dt_pickle','wb') as f:
-        pickle.dump(dt,f)
     return y_pred
 
 
@@ -96,10 +94,10 @@ def ridge_reg(X_train,y,X_test):
     y_pred = rr.predict(X_test)
     return y_pred
 
-def knn_dtw_classifier(X_train,y,X_test):
+def knn(X_train,y,X_test):
     from sklearn.neighbors import KNeighborsClassifier
-    from tslearn.metrics import dtw
-    knn = KNeighborsClassifier(n_neighbors=5,metric = dtw )
+    #from tslearn.metrics import dtw
+    knn = KNeighborsClassifier(n_neighbors=5)
     knn.fit(X_train,y)
     y_pred = knn.predict(X_test)
     return y_pred
