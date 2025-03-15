@@ -871,6 +871,13 @@ def parity_plot(y_true,y_pred,model,mode):
         plt.show()
 
 def scatterplot_3d_classification(X_data,y_data):
+    
+
+    '''
+    paizei an exw kanei prwta pca 
+    
+    
+    '''
     import matplotlib.pyplot as plt
     import numpy as np
     y_data = np.array(y_data)
