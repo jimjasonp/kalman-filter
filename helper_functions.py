@@ -1006,7 +1006,7 @@ def data_mixer(X_1,y_1,X_2,y_2,first_percentage,second_percentage,target_value):
     return X_train,y_train
 
 
-def confusion_matrix_display(y_true,y_pred,model,mode):
+def confusion_matrix_display(y_true,y_pred,model,mode,accuracy):
     import matplotlib.pyplot as plt
     from sklearn.metrics import confusion_matrix,ConfusionMatrixDisplay
 
@@ -1018,7 +1018,7 @@ def confusion_matrix_display(y_true,y_pred,model,mode):
     cm = confusion_matrix(y_true,y_pred)
     disp = ConfusionMatrixDisplay(cm)
     disp.plot()
-    plt.title(f'Confusion matrix of {name}')
+    plt.title(f'Confusion matrix of {name} with accuracy = {accuracy}')
     if mode=='save':
         plt.savefig(f'{name}_confusion_matrix.png')
         plt.close('all')
