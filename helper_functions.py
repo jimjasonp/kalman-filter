@@ -8,12 +8,15 @@ CONTENTS
 
 3)DATA TRANSFORMATIONS
 
-4)FEATURE ENGINEERING TECHNIQUES FOR SIZE REDUCTION
+4)FEATURE ENGINEERING TECHNIQUES
 
 5)PLOTS
 
 6)KERNELS
 
+7)EXPERIMENT RUN
+
+8)TOOLS FOR TUNING
 '''
 
 
@@ -675,7 +678,7 @@ def wavelet(sample):
 
 
 '''
-4) FEATURE ENGINEERING TECHNIQUES FOR SIZE REDUCTION 
+4) FEATURE ENGINEERING TECHNIQUES
 
 ---> random forest feature elimination with cross validation (rfecv)
 pairnei san input to X_train to y_train kai to X_test kai kanei rfecv gia na brei ta kalutera features
@@ -690,6 +693,10 @@ pairnei san input to X_train kai to X_test kai ton kernel kai prwta xrhsimopoiei
 kanei pca gia na krathsei ta features me to megalutero variance
 to output einai to X_train me to X_test me ta features me tous sunduasmous me to megalutero variance
 
+
+---> data mixer (data_mixer)
+pairnei san input ta X kai Y enos dataset kai ta X kai Y enos deuterou dataset kai to pososto summetoxhs kathe dataset.
+Enwnei ta duo datasets basei twn antistoixwn posostwwn summetoxhs kai kanei shuffle ta dedomena to output einai to enwmeno dataset.
 '''
 
 
@@ -769,6 +776,26 @@ def kpca(X_train,X_test,input_kernel):
     X_test = pd.DataFrame(X_test)
     return X_train,X_test
 
+def data_mixer(X_1,y_1,X_2,y_2,first_percentage,second_percentage):
+    from sklearn.model_selection import train_test_split
+    import numpy as np
+    if first_percentage == 1:
+        X_1_half = X_1
+        y_1_half = y_1        
+    else:
+        X_1_half, X_drop, y_1_half, y_drop = train_test_split(X_1, y_1, test_size=1-first_percentage,shuffle=True)
+    
+    if second_percentage ==1:
+        X_2_half = X_2
+        y_2_half = y_2
+    else:
+        X_2_half, X_drop, y_2_half, y_drop = train_test_split(X_2, y_2, test_size=1-second_percentage,shuffle=True)
+    
+    X_train = np.concatenate((X_1_half,X_2_half),axis=0)
+    y_train = np.concatenate((y_1_half,y_2_half),axis=0)
+    return X_train,y_train
+
+
 ########################################################################
 
 ########################################################################
@@ -782,10 +809,9 @@ def kpca(X_train,X_test,input_kernel):
 '''
 5) PLOTS
 
----> bar plots specific for regression, pairnei data sizes (bar_res_plot)
-einai specific gia ta regression runs
-pairnei san input ta modela pou etreksa kai tis times twn mape twn diaforwn megethwn tou dataset pou etreksan (min,mid,max) kai ta onomata twn montelwn pou etreksan
-kai dinei san output ta bar plots twn mape gia kathe montelo
+---> bar plots specific for regression or classification, pairnei data sizes (bar_res_plot)
+Gia to mode regression pairnei san input ta modela pou etreksa kai tis times twn mape twn diaforwn megethwn tou dataset pou etreksan (min,mid,max) kai ta onomata twn montelwn pou etreksan
+kai dinei san output ta bar plots twn mape gia kathe montelo. Gia to mode classification kanei to idio alla anti gia mape dinei times accuracy
 
 ---> parity plots it can either save or show the plot (parity_plot)
 pairnei san input to y_test to y_pred to montelo kai to mode dhladh an thelw na kanw save h aplws na dw to plot
@@ -810,6 +836,17 @@ pairnei san input to onoma tou defect kai ena sample apo
 concatenated normalized shma kai dinei san output to scatter opou o aksonas 
 y einai to normalized amplitude kai o x einai h suxnothta 
 
+
+---> confusion matrix gia to classification task (confusion_matrix_display)
+
+pairnei san input ta y_true,y_pred,model,mode,accuracy kai bgazei to confusion matrix me titlo
+to onoma tou montelou kai to accuracy tou. To montelo prepei na einai function kai to mode einai 
+eite show eite save.
+
+---> 2d plot gia decision boundaries (decision_bounds_plot)
+
+Pairnei san input to X_train to y_train kai to montelo pou etreksa kai bgazei ena 2d plot twn decision boundaries.
+Prepei prwta na exw kanei fit to montelo kai oi classes na einai arithmoi
 '''
 
 def bar_res_plot(model_list,min,mid,max,name_list,mode):
@@ -942,6 +979,39 @@ def total_normalized_scatter(defect,sample_total):
     plt.xlabel('sample')
     plt.show()
 
+def confusion_matrix_display(y_true,y_pred,model,mode,accuracy):
+    import matplotlib.pyplot as plt
+    from sklearn.metrics import confusion_matrix,ConfusionMatrixDisplay
+
+   
+    if model.__name__ =='svc' : name = 'Support Vector Machines'
+    if model.__name__ =='knn' : name = 'K Nearest Neighbors'
+    if model.__name__ =='logistic_regression' : name = 'Logistic Regression'
+
+    cm = confusion_matrix(y_true,y_pred)
+    disp = ConfusionMatrixDisplay(cm)
+    disp.plot()
+    plt.title(f'Confusion matrix of {name} with accuracy = {accuracy}')
+    if mode=='save':
+        plt.savefig(f'{name}_confusion_matrix.png')
+        plt.close('all')
+        plt.clf()
+    elif mode =='show':
+        plt.show()
+
+
+def decision_bounds_plot(X_train,y_train,model):
+
+    '''
+    thelei oi classes na einai arithmoi
+    '''
+
+    import matplotlib.pyplot as plt
+    from sklearn.inspection import DecisionBoundaryDisplay
+
+    display = DecisionBoundaryDisplay.from_estimator(model,X_train,response_method='predict',xlabel='feature_1', ylabel='feature_2',alpha=0.5)
+    display.ax_.scatter(X_train[0],X_train[1],c=y_train, edgecolor="black")
+    plt.show()
 
 ########################################################################
 
@@ -978,85 +1048,65 @@ def total_normalized_scatter(defect,sample_total):
 ########################################################################
 
 
+'''
 
-''''
+7)EXPERIMENT RUN
+
+---> regression experiment run (regression_model_run)
+Pairnei san input to montelo to X_train to y_train to X_test kai y_test kai bgazei san output to 
+mae,mape,y_test kai y_pred. To montelo prepei na einai function
+
+---> classification experiment run(classification_model_run)
+Pairnei san input to montelo to X_train to y_train to X_test kai y_test kai bgazei san output to 
+accuracy,y_test kai y_pred. To montelo prepei na einai function
+'''
 
 
-check gia na ta prosthesw
+def regression_model_run(model,X_train,y,X_test,y_true):
+    
+    from sklearn.metrics import mean_absolute_percentage_error,mean_absolute_error
+
+    y_pred = model(X_train,y,X_test)
+    #print(y_pred)
+    mape = 100*mean_absolute_percentage_error(y_true,y_pred)
+    mae = mean_absolute_error(y_true,y_pred)
+    return mae,mape,y_true,y_pred
+
+def classification_model_run(model,X_train,y,X_test,y_true):
+
+    from sklearn.metrics import accuracy_score
+    y_pred = model(X_train,y,X_test)
+    #print(y_pred)
+    acc = 100*accuracy_score(y_true,y_pred)
+    acc = accuracy_score(y_true,y_pred)
+    return acc,y_true,y_pred
+
+########################################################################
+
+########################################################################
+
+########################################################################
+
+########################################################################
+
+########################################################################
+
+
 
 '''
 
-def data_mixer(X_1,y_1,X_2,y_2,first_percentage,second_percentage,target_value):
-    from sklearn.model_selection import train_test_split
-    import numpy as np
-    if first_percentage == 1:
-        X_1_half = X_1
-        y_1_half = y_1        
-    else:
-        X_1_half, X_drop, y_1_half, y_drop = train_test_split(X_1, y_1, test_size=1-first_percentage,shuffle=True)
-    
-    if second_percentage ==1:
-        X_2_half = X_2
-        y_2_half = y_2
-    else:
-        X_2_half, X_drop, y_2_half, y_drop = train_test_split(X_2, y_2, test_size=1-second_percentage,shuffle=True)
-    
-    X_train = np.concatenate((X_1_half,X_2_half),axis=0)
-    y_train = np.concatenate((y_1_half,y_2_half),axis=0)
-    return X_train,y_train
+6)TOOLS FOR TUNING
+
+---> cross validation me leave one out(cross_val_loo)
+Pairnei san input to montelo to X kai to y kai kanei leave one out cross validation kai bgazei ta scores kathe fold.
+Sto regression to scoring einai  'neg_mean_absolute_percentage_error' kai sto classification einai 'accuracy'
 
 
-def confusion_matrix_display(y_true,y_pred,model,mode,accuracy):
-    import matplotlib.pyplot as plt
-    from sklearn.metrics import confusion_matrix,ConfusionMatrixDisplay
-
-   
-    if model.__name__ =='svc' : name = 'Support Vector Machines'
-    if model.__name__ =='knn' : name = 'K Nearest Neighbors'
-    if model.__name__ =='logistic_regression' : name = 'Logistic Regression'
-
-    cm = confusion_matrix(y_true,y_pred)
-    disp = ConfusionMatrixDisplay(cm)
-    disp.plot()
-    plt.title(f'Confusion matrix of {name} with accuracy = {accuracy}')
-    if mode=='save':
-        plt.savefig(f'{name}_confusion_matrix.png')
-        plt.close('all')
-        plt.clf()
-    elif mode =='show':
-        plt.show()
-
-def pickle_saver(model):
-    
-    '''
-    prepei to model na einai ws function
-    
-    '''
-    
-    import pickle
-
-    with open(f'{model.__name__}_pickle','wb') as f:
-        pickle.dump(model,f)
-
-def pickle_opener(model):
-    import pickle
-    with open(f'{model.__name__}_pickle','rb') as f:
-        return pickle.load(f)
-
-
-def decision_bounds_plot(X_train,y_train,model):
-
-    '''
-    thelei oi classes na einai arithmoi
-    '''
-
-    import matplotlib.pyplot as plt
-    from sklearn.inspection import DecisionBoundaryDisplay
-
-    display = DecisionBoundaryDisplay.from_estimator(model,X_train,response_method='predict',xlabel='feature_1', ylabel='feature_2',alpha=0.5)
-    display.ax_.scatter(X_train[0],X_train[1],c=y_train, edgecolor="black")
-    plt.show()
-
+---> grid search me leave one out(grid_search_loo)
+Pairnei san input to montelo to X_train kai to y_train kai kanei grid search me leave one out gia na brei tis kaluteres 
+parametrous tou montelou. Sto telos kanei print tis kaluteres parametrous.
+Analoga to montelo prepei na ruthmistoun oi parametroi pou tha ginei to grid search.
+'''
 
 def cross_val_loo(model,X,y):
     '''
@@ -1091,26 +1141,26 @@ def grid_search_loo(model,X_train,y_train):
     print(grid.best_params_)
 
 
+########################################################################
+
+########################################################################
+
+########################################################################
+
+########################################################################
+
+########################################################################
 
 
-def regression_model_run(model,X_train,y,X_test,y_true):
-    
-    from sklearn.metrics import mean_absolute_percentage_error,mean_absolute_error
 
-    y_pred = model(X_train,y,X_test)
-    #print(y_pred)
-    mape = 100*mean_absolute_percentage_error(y_true,y_pred)
-    mae = mean_absolute_error(y_true,y_pred)
-    return mae,mape,y_true,y_pred
+''''
 
-def classification_model_run(model,X_train,y,X_test,y_true):
 
-    from sklearn.metrics import accuracy_score
-    y_pred = model(X_train,y,X_test)
-    #print(y_pred)
-    acc = 100*accuracy_score(y_true,y_pred)
-    acc = accuracy_score(y_true,y_pred)
-    return acc,y_true,y_pred
+check gia na ta prosthesw
+
+'''
+
+
 
 ########################################################
 ########################################################
