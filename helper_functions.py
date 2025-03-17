@@ -319,7 +319,7 @@ To input einai to path kai output einai ena array me ta properties tou kanonikop
 gia kathe sensora trexei run_signal_extract kai bgazei ta properties tou shmatos kathe sensor
 To output einai ena array me ta concatenated signal properties kath sensor
 
----> normalized fourier signal with properties (fourier_std_with_props_vector)
+---> normalized fourier signal with properties (fourier_nrm_with_props_vector)
 To input einai to path kai to output einai ena array me to kanonikopoihmeno shma kai ta properties tou kanonikopoihmenoy shmatos
 xrhsimopoei to function X_set gia na ftiaksei to shma kai meta kanonikopoei to shma kai dinei ta properties tou
 To output einai ena concatenated array me to kanonikopoihmeno shma kai me thn kanonikopoihmenh suxnothta kai ta properties tou kanonikopoihmenou shmatos
@@ -432,7 +432,7 @@ def props_vector(path):
     vector = np.concatenate(( run_signal_extract(s2),run_signal_extract(s3),run_signal_extract(s4)),axis=1)
     return vector
 
-def fourier_std_with_props_vector(path):
+def fourier_nrm_with_props_vector(path):
 
     import numpy as np
     
@@ -1095,7 +1095,7 @@ def classification_model_run(model,X_train,y,X_test,y_true):
 
 '''
 
-6)TOOLS FOR TUNING
+8)TOOLS FOR TUNING
 
 ---> cross validation me leave one out(cross_val_loo)
 Pairnei san input to montelo to X kai to y kai kanei leave one out cross validation kai bgazei ta scores kathe fold.
