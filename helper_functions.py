@@ -1139,6 +1139,7 @@ def grid_search_loo(model,X_train,y_train):
 
     # print best parameter after tuning 
     print(grid.best_params_)
+    print(grid.best_score_)
 
 
 ########################################################################
@@ -1160,7 +1161,53 @@ check gia na ta prosthesw
 
 '''
 
+def new_fourier_signal_normalization_harmonics(sample):
+    import numpy as np
+    
 
+    ########## pairnei san input sample apo raw shma
+    ####### dinei output to amp kai to freq tou kanonikopoihmenou shmatos
+    amp= fourier(sample)[0]
+    freq= fourier(sample)[1]
+
+    amp_list =[]
+    freq_list =[]
+    bound = int(0.5*len(amp))
+    #max_amp = max(amp)
+    max_amp = -max(amp)
+    max_freq = abs(freq[amp.argmax()])
+
+    for i in range(150,200):
+        amp_list.append(amp[i]/max_amp)
+        #amp_list.append(1/(amp[i]/max_amp))
+        freq_list.append(freq[i]/max_freq)
+
+    amp = np.array(amp_list)
+    freq = np.array(freq_list)
+    return amp,freq
+
+
+def new_fourier_vector_maker(data):
+    ########## pairnei san input data
+    ####### dinei output vector kanonikopoihmeno sample me freq
+    feature_vector=[]
+    freq_vector =[]
+    for sample in data:
+        feature_vector.append(new_fourier_signal_normalization_harmonics(sample)[0])
+        freq_vector.append(new_fourier_signal_normalization_harmonics(sample)[1])
+    return feature_vector,freq_vector
+
+
+def new_fourier_nrm_vector(path):
+
+    import numpy as np
+    
+    ########## pairnei san input path
+    ####### dinei output to nrm fourier shma
+    from helper_functions import X_set
+    X, s2,s3,s4,none_freqs = X_set(path,'none')
+    vector = np.concatenate(( new_fourier_vector_maker(s2)[0],new_fourier_vector_maker(s3)[0],new_fourier_vector_maker(s4)[0],new_fourier_vector_maker(s4)[1]),axis=1)
+    return vector
 
 ########################################################
 ########################################################
