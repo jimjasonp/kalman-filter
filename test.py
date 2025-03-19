@@ -1,78 +1,60 @@
-from helper_functions import new_fourier_nrm_vector,y_set,X_set,grid_search_loo
-from sklearn.preprocessing import StandardScaler
+from helper_functions import X_set,y_set,fourier_nrm_vector,fourier_nrm_vector_harmonics
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score,confusion_matrix
+from sklearn.metrics import confusion_matrix,accuracy_score,ConfusionMatrixDisplay
+import pandas as pd
 import numpy as np
-balanced_path = 'Balanced_data'
-test_path = 'test_classification'
+import matplotlib.pyplot as plt
+from sklearn.model_selection import LeaveOneOut,cross_val_score,KFold
+from sklearn.neighbors import KNeighborsClassifier
 
-X = X_set(test_path,'none')[0]
-y = y_set(test_path)['defect']
 
-print('===========================')
-print('=---test classification---=')
-for i in range(0,5):
-    X_train,X_test,y_train,y_test = train_test_split(X,y,test_size=0.2,shuffle=True)
+knn_results = pd.read_csv('knn_results_nrm')
+knn_results = knn_results['0']
+knn_mean = np.mean(knn_results)
+knn_std =  np.std(knn_results)
 
-    scaler = StandardScaler()
-    X = scaler.fit_transform(X)
+lr_results = pd.read_csv('lr_class_res')
+lr_results = lr_results['0']
+lr_mean = np.mean(lr_results)
+lr_std =  np.std(lr_results)
 
-    svm = SVC()
-    '''
-    svm.fit(X_train,y_train)
-    y_pred = svm.predict(X_test)
-    acc = accuracy_score(y_test,y_pred)
-    cm = confusion_matrix(y_test,y_pred)
-    print(cm)
-    print(acc)'''
+svm_results = pd.read_csv('svm_class_res')
+svm_results = svm_results['0']
+svm_mean = np.mean(svm_results)
+svm_std=   np.std(svm_results)
 
-    grid_search_loo(svm,X,y)
-print('===========================')
-print('=---balanced_data---=')
 
-X = X_set(balanced_path,'none')[0]
-y = y_set(balanced_path)['defect']
-for i in range(0,5):
-    X_train,X_test,y_train,y_test = train_test_split(X,y,test_size=0.2,shuffle=True)
+barWidth = 0.25
+fig = plt.subplots(figsize =(12, 8)) 
 
-    scaler = StandardScaler()
-    X = scaler.fit_transform(X)
+mean_list = [svm_mean,knn_mean,lr_mean]
+std_list = [svm_std,knn_std,lr_std]
 
-    svm = SVC()
-    '''
-    svm.fit(X_train,y_train)
-    y_pred = svm.predict(X_test)
-    acc = accuracy_score(y_test,y_pred)
-    cm = confusion_matrix(y_test,y_pred)
-    print(cm)
-    print(acc)'''
 
-    grid_search_loo(svm,X,y)
-print('===========================')
-print('=---balanced_and test data---=')
+br1 = np.arange(len(std_list)) 
+br2 = [x + barWidth for x in br1] 
+br3 = [x + barWidth for x in br2] 
 
-X_balanced = X_set(balanced_path,'none')[0]
-y_balanced = y_set(balanced_path)['defect']
-X_test = X_set(test_path,'none')[0]
-y_test = y_set(test_path)['defect']
-X = np.concatenate((X_balanced,X_test),axis=0)
-y = np.concatenate((y_balanced,y_test),axis=0)
+def addlabels(x,y,thesi):
+    for i in range(len(x)):
+        plt.text(i, y[i], y[i], ha = thesi)
 
-for i in range(0,5):
-    X_train,X_test,y_train,y_test = train_test_split(X,y,test_size=0.2,shuffle=True)
+plt.bar(br1, mean_list, color ='r', width = barWidth, 
+        edgecolor ='grey', label ='Mean') 
+plt.bar(br2, std_list, color ='g', width = barWidth, 
+        edgecolor ='grey', label ='Standard Deviation') 
 
-    scaler = StandardScaler()
-    X = scaler.fit_transform(X)
 
-    svm = SVC()
-    '''
-    svm.fit(X_train,y_train)
-    y_pred = svm.predict(X_test)
-    acc = accuracy_score(y_test,y_pred)
-    cm = confusion_matrix(y_test,y_pred)
-    print(cm)
-    print(acc)'''
+plt.xlabel('Algorithm', fontweight ='bold', fontsize = 15) 
+plt.ylabel('Metrics value', fontweight ='bold', fontsize = 15) 
+plt.xticks([r + barWidth for r in range(len(std_list))], 
+        ['SVM', 'KNN', 'LR'])
 
-    grid_search_loo(svm,X,y)
-print('===========================')
+addlabels(br1,mean_list,'right')
+addlabels(br2,std_list,'left')
+
+plt.legend()
+plt.show() 
+
