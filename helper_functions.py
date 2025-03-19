@@ -452,31 +452,30 @@ def fourier_nrm_with_props_vector(path):
 
 C) HARMONICS WITH NORMALIZATION 
 
-Ta duo parakatw functions leitourgoun mazi gia na parw ta harmonics kathe shmatos
-gia na parw tis armonikes xrhsimopoiw to fourier_std_vector_harmonics kai bazw san input to path kai to minimum size pou thelw na exw
-sthn perioxh pou tha epileksw na krathsw kai mou dinei tis times amplitude kai suxnothtas gia auth thn perioxh
+ta tria parakatw functions leitourgoun mazi
+gia na parw tis armonikes apo to kanonikopoihmeno shma xrhsimopoiw to fourier nrm vector
+to opoio pairnei san input to path kai to output einai oi armonikes tou kanonikopoihmenou shmatos
 
----> fourier signal normalization harmonics (fourier_signal_standardization_harmonics)
-To input einai ena raw shma to opoio to kanonikopoiw kai meta thetw kapoia oria pou antistoixizontai se mia perioxh apo ligo prin ews ligo meta thn prwth kai  
-ligo prin ews ligo meta thn deuterh armonikh tou kanonikopoihmenou shmatos. Epishs efarmozw ena savgol filter gia na kanw pio smooth to shma
-To output einai ena array me tis times amplitude kai ena array me tis syxnothtes twn duo armonikwn
+---> harmonics from fourier signal normalization (fourier_signal_normalization_harmonics)
+To input einai ena sample shmatos kai ypologizei to fft kai kanonikopoei ws pros th megisth syxnothta
+dhladh th syxnothta diegershs. Apo auto to shma krataei mono tis ta samples me arithmo sample apo 150 ews 200
+giati mesa se auto to diasthma exw tis dominant armonikes. To amplitude einai kanonikopoihmeno ws pros to amplitude sth megisth syxnothta kai 
+h suxnothta einai kanonikopoihmenh ws pros th syxnothta diegershs
 
----> fourier normalized signal with harmonics(fourier_std_vector_harmonics)
-To input einai to path kai to minimum size pou krataw dhladh h elaxisth posothta timwn pou krataw gia tis duo armonikes.
-Prwta pairnw to shma kai to kanonikopoiw kai meta trexw to fourier_signal_standardization_harmonics gia na parw tis armonikes tou. 
-Epeidh kathe shma diaferei ligo, oi times max syxnothtas kai max amplitude diaferoyn ligo opote einai fysiologiko oti den pairnw ton idio arithmo datapoints se kathe armonikh opote 
-orizw ena katwtato orio to opoio an to yperbainei kapoia periptwsh tote afairw tyxaies times apo to zeygos armonikwn wste na exw osa datapoints osa to orio.
-To output einai ena array me tis times tou amplitude kai tou frequency gia tis duo prwtes armonikes tou kanonikopoihmenou shamtos
+---> fourier harmonics vector maker (fourier_vector_maker_harmonics)
+Pairnei san input data (mia lista h array apo shmata) kai efarmozei th sunarthsh fourier_signal_normalization_harmonics kai dinei tis armonikes apo
+to kanonikopoihmeno shma to input einai ta data kai ta output einai mia lista me to kanonikopoihmeno amplitude twn armonikwn kai mia lista me thn kanonikopoihmenh 
+syxnothta twn armonikwn
+
+---> harmonics fourier nrm vector (fourier_nrm_vector_harmonics)
+To input einai to path kai efarmozei thn sunarthsh fourier_vector_maker gia olous tous sensors kathe shmatos sto path.
+To input einai to path kai to output einai oi concatenated normalized armonikes olwn twn samples sto path
 
 '''
-
-
-
 def fourier_signal_normalization_harmonics(sample):
-
     import numpy as np
-
     
+
     ########## pairnei san input sample apo raw shma
     ####### dinei output to amp kai to freq tou kanonikopoihmenou shmatos
     amp= fourier(sample)[0]
@@ -485,58 +484,40 @@ def fourier_signal_normalization_harmonics(sample):
     amp_list =[]
     freq_list =[]
     bound = int(0.5*len(amp))
+    #max_amp = max(amp)
     max_amp = -max(amp)
     max_freq = abs(freq[amp.argmax()])
 
-    #
-    for i in range(0,bound):
-        if freq[i]/max_freq>0.8 and freq[i]/max_freq<1.2 or freq[i]/max_freq>1.8 and freq[i]/max_freq<2.2:
-            amp_list.append(amp[i]/max_amp)
-            freq_list.append(freq[i]/max_freq)
-    
-    freq = np.array(freq_list)
-    amp = np.array(amp_list)
-    from scipy.signal import savgol_filter
-    
-    amp = savgol_filter(amp,5,3)
+    for i in range(150,200):
+        amp_list.append(amp[i]/max_amp)
+        #amp_list.append(1/(amp[i]/max_amp))
+        freq_list.append(freq[i]/max_freq)
 
+    amp = np.array(amp_list)
+    freq = np.array(freq_list)
     return amp,freq
 
 
-
-def fourier_nrm_vector_harmonics(path,min_size):
-
-    import numpy as np
-    
-
-    ########## pairnei san input path
+def fourier_vector_maker_harmonics(data):
+    ########## pairnei san input data
     ####### dinei output vector kanonikopoihmeno sample me freq
-    from helper_functions import X_set 
-    data= X_set(path,'none')[0]
     feature_vector=[]
     freq_vector =[]
     for sample in data:
         feature_vector.append(fourier_signal_normalization_harmonics(sample)[0])
         freq_vector.append(fourier_signal_normalization_harmonics(sample)[1])
-    #### epeidh exw balei thn if sth sunarthsh fourier kathe sample mesa sto feature vector den exei idio megethos
-    ### prepei kathe sample na exei idio megethos gia auto stis periptwseis pou exw parapanw times afairw kapoies
-    
-    min_size_feature_vector =[]
-    min_size_freq_vector =[]
+    return feature_vector,freq_vector
 
-    for sample in feature_vector:
-        sample = np.random.choice(sample, size=min_size, replace=False)
-        min_size_feature_vector.append(sample)
 
-    for sample in freq_vector:
-        sample = np.random.choice(sample, size=min_size, replace=False)
-        min_size_freq_vector.append(sample)
-    
-    feature_vector = min_size_feature_vector
-    freq_vector = min_size_freq_vector
+def fourier_nrm_vector_harmonics(path):
 
-    vector = np.concatenate((feature_vector,freq_vector),axis=1)
+    import numpy as np
     
+    ########## pairnei san input path
+    ####### dinei output to nrm fourier shma
+    from helper_functions import X_set
+    X, s2,s3,s4,none_freqs = X_set(path,'none')
+    vector = np.concatenate(( fourier_vector_maker_harmonics(s2)[0],fourier_vector_maker_harmonics(s3)[0],fourier_vector_maker_harmonics(s4)[0],fourier_vector_maker_harmonics(s4)[1]),axis=1)
     return vector
 
 
@@ -1161,53 +1142,7 @@ check gia na ta prosthesw
 
 '''
 
-def new_fourier_signal_normalization_harmonics(sample):
-    import numpy as np
-    
 
-    ########## pairnei san input sample apo raw shma
-    ####### dinei output to amp kai to freq tou kanonikopoihmenou shmatos
-    amp= fourier(sample)[0]
-    freq= fourier(sample)[1]
-
-    amp_list =[]
-    freq_list =[]
-    bound = int(0.5*len(amp))
-    #max_amp = max(amp)
-    max_amp = -max(amp)
-    max_freq = abs(freq[amp.argmax()])
-
-    for i in range(150,200):
-        amp_list.append(amp[i]/max_amp)
-        #amp_list.append(1/(amp[i]/max_amp))
-        freq_list.append(freq[i]/max_freq)
-
-    amp = np.array(amp_list)
-    freq = np.array(freq_list)
-    return amp,freq
-
-
-def new_fourier_vector_maker(data):
-    ########## pairnei san input data
-    ####### dinei output vector kanonikopoihmeno sample me freq
-    feature_vector=[]
-    freq_vector =[]
-    for sample in data:
-        feature_vector.append(new_fourier_signal_normalization_harmonics(sample)[0])
-        freq_vector.append(new_fourier_signal_normalization_harmonics(sample)[1])
-    return feature_vector,freq_vector
-
-
-def new_fourier_nrm_vector(path):
-
-    import numpy as np
-    
-    ########## pairnei san input path
-    ####### dinei output to nrm fourier shma
-    from helper_functions import X_set
-    X, s2,s3,s4,none_freqs = X_set(path,'none')
-    vector = np.concatenate(( new_fourier_vector_maker(s2)[0],new_fourier_vector_maker(s3)[0],new_fourier_vector_maker(s4)[0],new_fourier_vector_maker(s4)[1]),axis=1)
-    return vector
 
 ########################################################
 ########################################################
@@ -1220,6 +1155,79 @@ def new_fourier_nrm_vector(path):
 GIA PETAMA TA BLEPW PRIN TA SBHSW
 
 '''
+
+
+'''
+
+def fourier_signal_normalization_harmonics(sample):
+
+    import numpy as np
+
+    
+    ########## pairnei san input sample apo raw shma
+    ####### dinei output to amp kai to freq tou kanonikopoihmenou shmatos
+    amp= fourier(sample)[0]
+    freq= fourier(sample)[1]
+
+    amp_list =[]
+    freq_list =[]
+    bound = int(0.5*len(amp))
+    max_amp = -max(amp)
+    max_freq = abs(freq[amp.argmax()])
+
+    #
+    for i in range(0,bound):
+        if freq[i]/max_freq>0.8 and freq[i]/max_freq<1.2 or freq[i]/max_freq>1.8 and freq[i]/max_freq<2.2:
+            amp_list.append(amp[i]/max_amp)
+            freq_list.append(freq[i]/max_freq)
+    
+    freq = np.array(freq_list)
+    amp = np.array(amp_list)
+    from scipy.signal import savgol_filter
+    
+    amp = savgol_filter(amp,5,3)
+
+    return amp,freq
+
+
+
+def fourier_nrm_vector_harmonics(path,min_size):
+
+    import numpy as np
+    
+
+    ########## pairnei san input path
+    ####### dinei output vector kanonikopoihmeno sample me freq
+    from helper_functions import X_set 
+    data= X_set(path,'none')[0]
+    feature_vector=[]
+    freq_vector =[]
+    for sample in data:
+        feature_vector.append(fourier_signal_normalization_harmonics(sample)[0])
+        freq_vector.append(fourier_signal_normalization_harmonics(sample)[1])
+    #### epeidh exw balei thn if sth sunarthsh fourier kathe sample mesa sto feature vector den exei idio megethos
+    ### prepei kathe sample na exei idio megethos gia auto stis periptwseis pou exw parapanw times afairw kapoies
+    
+    min_size_feature_vector =[]
+    min_size_freq_vector =[]
+
+    for sample in feature_vector:
+        sample = np.random.choice(sample, size=min_size, replace=False)
+        min_size_feature_vector.append(sample)
+
+    for sample in freq_vector:
+        sample = np.random.choice(sample, size=min_size, replace=False)
+        min_size_freq_vector.append(sample)
+    
+    feature_vector = min_size_feature_vector
+    freq_vector = min_size_freq_vector
+
+    vector = np.concatenate((feature_vector,freq_vector),axis=1)
+    
+    return vector
+
+
+
 def single_model_result_plot(model,X_train,y,X_test,y_true):
 
     import matplotlib.pyplot as plt
@@ -1252,4 +1260,4 @@ def x_y_unwanted_remover(sensor2,sensor3,sensor4,y):
         y =  y.drop([i])
     
     y = np.array(y)
-    return sensor2,sensor3,sensor4,y
+    return sensor2,sensor3,sensor4,y'''
