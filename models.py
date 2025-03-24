@@ -110,6 +110,20 @@ def svc(X_train,y,X_test):
     y_pred = svm.predict(X_test)
     return y_pred
 
+def random_forest_clf(X_train,y_train,X_test):
+    from sklearn.ensemble import RandomForestClassifier
+    rf = RandomForestClassifier(n_estimators=500,criterion='entropy')
+    rf.fit(X_train,y_train)
+    y_pred = rf.predict(X_test)
+    return y_pred
+
+def xgb_clf(X_train,y_train,X_test):
+    from xgboost import XGBClassifier
+    xgb = XGBClassifier()
+    xgb.fit(X_train,y_train)
+    y_pred = xgb.predict(X_test)
+    return y_pred
+
 
 def logistic_regression(X_train,y,X_test):
     from sklearn.linear_model import LogisticRegression

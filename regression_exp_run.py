@@ -4,17 +4,17 @@ import numpy as np
 
 from helper_functions import y_set,X_set
 from models import *
-from helper_functions import data_mixer,bar_res_plot,regression_model_run,single_model_result_plot,parity_plot
+from helper_functions import data_mixer,bar_res_plot,regression_model_run,parity_plot
 
 
-transformation = 'fourier'
+transformation = 'none'
 
-X_data = X_set(r'data',transformation)[0]
-X_random_data = X_set(r'random_data',transformation)[0]
+X_data = X_set(r'Balanced_data',transformation)[0]
+X_random_data = X_set(r'test_classification',transformation)[0]
 X_test = X_set(r'dokimes',transformation)[0]
 
-y_data = y_set(r'data')['dmg']
-y_random_data = y_set(r'random_data')['dmg']
+y_data = y_set(r'Balanced_data')['dmg']
+y_random_data = y_set(r'test_classification')['dmg']
 y_test = [0.02,0.034,0.062,0.086,0.12]
 
 scaler = StandardScaler()
@@ -48,7 +48,7 @@ for model in model_list:
 
 
 
-X_train,y_train = data_mixer(X_data, y_data,X_random_data, y_random_data,0.5,0.5,'dmg')
+X_train,y_train = data_mixer(X_data, y_data,X_random_data, y_random_data,0.5,0.5)
 
 
 for model in model_list:
