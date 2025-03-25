@@ -133,47 +133,32 @@ def logistic_regression(X_train,y,X_test):
     return y_pred
 
 def mlp(X_train,y,X_test):
-
     '''
     paizei kala mono gia scaled !!!!!!!!!!!!!!!!!!!!!
     
     '''
-
     import tensorflow as tf
-
     from tensorflow import keras
-
     from keras.models import Sequential
-
     from keras.layers import Flatten,Dense
 
 
     mlp = Sequential()
-    # Flatten input from 28x28 images to 784 (28*28) vector
-    #mlp.add(Flatten(input_shape=(None, 2250)))
-
-    # Dense layer 1 (256 neurons)
     mlp.add(Dense(256, activation='sigmoid'))
-
     # Dense layer 2 (128 neurons)
     mlp.add(Dense(128, activation='sigmoid'))
-
-
     mlp.add(Dense(64, activation='sigmoid'))
-
     #mlp.add(Dense(32, activation='sigmoid'))
     # Output layer (10 classes)
     mlp.add(Dense(10, activation='sigmoid'))
-
     mlp.add(Dense(1, activation='linear'))
 
 
     mlp.compile(loss="mean_absolute_error", optimizer="adam")
-
     history = mlp.fit(X_train, y, epochs=150,verbose=0)
     y_pred = mlp.predict(X_test)
     
-    return y_pred
+    return y_pred.ravel().tolist()
 
 
 def mlp_classifier(X_train,y,X_test):

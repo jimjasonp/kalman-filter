@@ -966,8 +966,8 @@ def confusion_matrix_display(y_true,y_pred,model,mode,accuracy):
 
    
     if model.__name__ =='svc' : name = 'Support Vector Machines'
-    if model.__name__ =='xgb_clf' : name = 'XGBoosting'
     if model.__name__ =='random_forest_clf' : name = 'Random Forest'
+    if model.__name__ =='xgb_clf' : name = 'XGB'
 
     cm = confusion_matrix(y_true,y_pred)
     disp = ConfusionMatrixDisplay(cm)
