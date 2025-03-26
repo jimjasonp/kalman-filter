@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from helper_functions import data_mixer,y_set,X_set,bar_res_plot,confusion_matrix_display,classification_model_run
 from models import *
-
+from sklearn.metrics import f1_score
 transformation = 'fourier'
 
 X_clf = X_set('test_classification',transformation)[0]
@@ -53,7 +53,9 @@ min = [] # mono to random_data
 
 for model in model_list:
     acc,y_true,y_pred = classification_model_run(model,X_train,y_train,X_test,y_test)
-    max.append(acc) 
+    max.append(acc)
+    f1 = f1_score(y_pred,y_test,average='macro')
+    print(f1) 
     confusion_matrix_display(y_true,y_pred,model,'show',acc)
 
 X_train_half,X_drop,y_train_half,y_drop = train_test_split(X_train,y_train,test_size=0.5,shuffle=True)
@@ -61,12 +63,16 @@ X_train_half,X_drop,y_train_half,y_drop = train_test_split(X_train,y_train,test_
 for model in model_list:
     acc,y_true,y_pred = classification_model_run(model,X_train_half,y_train_half,X_test,y_test)
     mid.append(acc) 
+    f1 = f1_score(y_pred,y_test,average='macro')
+    print(f1)
     confusion_matrix_display(y_true,y_pred,model,'show',acc)
 
 
 for model in model_list:
     acc,y_true,y_pred = classification_model_run(model,X_train_clf,y_train_clf,X_test,y_test)
-    min.append(acc) 
+    min.append(acc)
+    f1 = f1_score(y_pred,y_test,average='macro')
+    print(f1)
     confusion_matrix_display(y_true,y_pred,model,'show',acc)
 
 bar_res_plot(model_list,min,mid,max,name_list,'classification')
