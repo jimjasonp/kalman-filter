@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-path = 'test_classification'
+path = 'random_data'
 
 from helper_functions import X_set
 
@@ -10,15 +10,24 @@ s2 = s2[10]
 s3 = s3[10]
 s4 = s4[10]
 
-'''plt.plot(s2)
-plt.plot(s3)
-plt.plot(s4)
-plt.grid()
-plt.title('Signal from all sensors')
-plt.ylabel('Electric potential (v)')
-plt.xlabel('time (ms)')
-plt.legend(['s2','s3','s4'])
-plt.show()'''
+fig,axs = plt.subplots(3,sharex=True,sharey=True)
+fig.suptitle('Signal from all sensors (all defect modes)')
+fig.text(0.5 , 0.04, 'time (ms)',ha = 'center')
+fig.text(0.04 , 0.5, 'Electric potential (v)',va = 'center',rotation = 'vertical')
+
+axs[0].plot(s2)
+axs[0].grid()
+axs[0].set_title('s2')
+
+axs[1].plot(s3)
+axs[1].grid()
+axs[1].set_title('s3')
+
+axs[2].plot(s4)
+axs[2].grid()
+axs[2].set_title('s4')
+
+plt.show()
 
 def fft(sample_sensor):
     fs = 1/500
@@ -26,18 +35,38 @@ def fft(sample_sensor):
     freqs = np.fft.fftfreq(sample_sensor.size,d=fs)
     power_spectrum = np.abs(fourier)
     power_spectrum = np.log(power_spectrum)
-    return power_spectrum,freqs
+    return power_spectrum, np.abs(freqs)
 
 s2 = fft(s2)
 s3 = fft(s3)
 s4 = fft(s4)
 
-plt.scatter(s2[1],s2[0])
-plt.scatter(s3[1],s3[0])
-plt.scatter(s4[1],s4[0])
+'''plt.plot(s2[1],s2[0],linestyle ='dashed')
+plt.plot(s3[1],s3[0],linestyle ='-.')
+plt.plot(s4[1],s4[0],linestyle =':')
 plt.grid()
-plt.title('Signal with FFT transformation in log scale')
+plt.title('Signal with FFT transformation in log scale (all defect modes)')
 plt.ylabel('Amplitude (v)')
-plt.xlabel('Frequency (Hz)')
+plt.xlabel('Frequency (kHz)')
 plt.legend(['s2','s3','s4'])
+plt.show()'''
+
+
+fig,axs = plt.subplots(3,sharex=True,sharey=True)
+fig.suptitle('Signal with FFT transformation in log scale (all defect modes)')
+fig.text(0.5 , 0.04, 'Frequency (kHz)',ha = 'center')
+fig.text(0.04 , 0.5, 'Amplitude (v) (v)',va = 'center',rotation = 'vertical')
+
+axs[0].plot(s2[1],s2[0])
+axs[0].grid()
+axs[0].set_title('s2')
+
+axs[1].plot(s3[1],s3[0])
+axs[1].grid()
+axs[1].set_title('s3')
+
+axs[2].plot(s4[1],s4[0])
+axs[2].grid()
+axs[2].set_title('s4')
+
 plt.show()
