@@ -41,21 +41,21 @@ s2 = fft(s2)
 s3 = fft(s3)
 s4 = fft(s4)
 
-'''plt.plot(s2[1],s2[0],linestyle ='dashed')
+plt.plot(s2[1],s2[0],linestyle ='dashed', dashes = (10,15))
 plt.plot(s3[1],s3[0],linestyle ='-.')
-plt.plot(s4[1],s4[0],linestyle =':')
+plt.plot(s4[1],s4[0],linestyle ='solid')
 plt.grid()
 plt.title('Signal with FFT transformation in log scale (all defect modes)')
 plt.ylabel('Amplitude (v)')
 plt.xlabel('Frequency (kHz)')
 plt.legend(['s2','s3','s4'])
-plt.show()'''
+plt.show()
 
 
 fig,axs = plt.subplots(3,sharex=True,sharey=True)
 fig.suptitle('Signal with FFT transformation in log scale (all defect modes)')
 fig.text(0.5 , 0.04, 'Frequency (kHz)',ha = 'center')
-fig.text(0.04 , 0.5, 'Amplitude (v) (v)',va = 'center',rotation = 'vertical')
+fig.text(0.04 , 0.5, 'Amplitude (v)',va = 'center',rotation = 'vertical')
 
 axs[0].plot(s2[1],s2[0])
 axs[0].grid()

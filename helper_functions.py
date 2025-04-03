@@ -160,7 +160,7 @@ def y_set(path):
         if df_defect ==0 and dm_defect ==0 and dd_defect ==0:
             defect_list.append('clean')
         elif df_defect !=0 and dm_defect !=0 and dd_defect !=0:
-            defect_list.append('ola')
+            defect_list.append('all defect modes')
         elif df_defect !=0 and dm_defect ==0 and dd_defect ==0:
             defect_list.append('df')
         elif df_defect ==0 and dm_defect !=0 and dd_defect ==0:
@@ -168,7 +168,7 @@ def y_set(path):
         elif df_defect ==0 and dm_defect ==0 and dd_defect !=0:
             defect_list.append('dd')
         else:
-            defect_list.append('ola')
+            defect_list.append('all defect modes')
         
         name_list.append(filename)
         case_list.append(case)
@@ -912,7 +912,7 @@ def scatterplot_3d_classification(X_data,y_data):
         if y_data[i] == 'dm':c.append(0)
         if y_data[i] == 'df':c.append(1)
         if y_data[i] == 'dd':c.append(2)
-        if y_data[i] == 'ola':c.append(3)
+        if y_data[i] == 'all defect modes':c.append(3)
         if y_data[i] == 'clean':c.append(4)
 
     img = ax.scatter(x, y, z,c=c, cmap=plt.hot())
@@ -1142,6 +1142,57 @@ check gia na ta prosthesw
 
 '''
 
+
+
+def binary_y_set(path):
+        import numpy as np
+        import pandas as pd
+        import os
+        import glob
+
+        #### paizei mono gia to balanced data###
+        dmg_list = []
+        name_list = []
+        case_list = []
+        defect_list =[]
+        # gia kathe file name sto path pou exw dwsei afairei to .csv kai afairei nan values kai kanei mia lista mono me to damage percentage
+        for filename in glob.glob(os.path.join(path , "meta*")):
+                df = pd.read_csv(filename,sep=' |,', engine='python')
+                dmg_perc = df['Damage_percentage']
+                case = df['caseStudey'][0]
+                dmg_perc = dmg_perc[0]
+                dmg_list.append(dmg_perc)
+                filename = filename.removesuffix('.csv')
+
+                df_defect = df['DamageLayer1'][0] + df['DamageLayer3'][0] + df['DamageLayer5'][0]
+                dm_defect = df['DamageLayer1'][1] + df['DamageLayer3'][1] + df['DamageLayer5'][1]
+                dd_defect = df['DamageLayer2'][0] + df['DamageLayer4'][0]
+
+                if df_defect !=0 and dm_defect !=0 and dd_defect !=0:
+                        defect_list.append('all defect modes')
+                else:
+                        defect_list.append('not all defect modes')
+
+                name_list.append(filename)
+                case_list.append(case)
+
+        # ftiaxnei ena dataframe me to damage percentage kai prosthetei to index number kai kanei sort basei autou 
+        dmg_data = pd.DataFrame({'dmg':dmg_list,'damage_file_name':name_list,'caseStudey':case_list,'defect':defect_list})
+        dmg_data['dmg_index_number'] = [int(i.split('_')[-1]) for i in dmg_data['damage_file_name']]
+        dmg_data = dmg_data.sort_values(by=['dmg_index_number'])
+        return dmg_data
+
+def single_defect_finder(y_pred,X_test,y_test):
+        single_defect_indices_X_test =[]
+        single_defect_indices_y_test =[]
+        for i in range(0,len(y_pred)):
+                if y_pred[i] !='all defect modes':
+                        single_defect_indices_X_test.append(X_test[i])
+                        single_defect_indices_y_test.append(y_test[i])
+        return single_defect_indices_X_test,single_defect_indices_y_test
+
+
+
 def res_class_bar_plot():
     import pandas as pd
     import numpy as np
@@ -1300,7 +1351,7 @@ def x_y_unwanted_remover(sensor2,sensor3,sensor4,y):
     
     index_remove_list =[]
     for i in range(0,len(y)):
-        if y[i] =='clean' or y[i] =='ola':
+        if y[i] =='clean' or y[i] =='all defect modes':
             index_remove_list.append(i)
     index_remove_list.reverse()
 
