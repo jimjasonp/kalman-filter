@@ -4,6 +4,10 @@ path = 'random_data'
 
 from helper_functions import X_set
 
+plt.rcParams.update({'font.size': 16})
+
+plt.rcParams['lines.linewidth'] = 2.5
+
 __,s2,s3,s4,__ = X_set(path,'none')
 
 s2 = s2[10]
