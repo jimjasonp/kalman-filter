@@ -22,8 +22,8 @@ def fourier_signal_normalization_harmonics(sample):
     amp_list =[]
     freq_list =[]
 
-    for i in range(150,200):
-    #for i in range(0,len(amp)):
+    #for i in range(150,200):
+    for i in range(0,len(amp)):
         amp_list.append(amp[i])
         freq_list.append(freq[i])
 
@@ -55,7 +55,7 @@ def fft_log_plot(index):
     if defect =='df':defect ='Fiber failure'
     if defect =='dm':defect ='Matrix failure'
     if defect =='dd':defect ='Delamination'
-    fig.suptitle(f'Harmonics in log scale ({defect})')
+    fig.suptitle(f'FFT of signal in log scale ({defect})')
     fig.text(0.5 , 0.04, 'Frequency (kHz)',ha = 'center')
     fig.text(0.04 , 0.5, 'Amplitude (v)',va = 'center',rotation = 'vertical')
 
@@ -83,9 +83,12 @@ all --> 54
 dm --> 58
 
 '''
+fft_log_plot(0)
+fft_log_plot(1)
+fft_log_plot(54)
+fft_log_plot(58)
 
-
-__,s2,s3,s4,__ = X_set(path,'none')
+'''__,s2,s3,s4,__ = X_set(path,'none')
 dd = fourier_signal_normalization_harmonics(s2[0])
 df = fourier_signal_normalization_harmonics(s2[1])
 all = fourier_signal_normalization_harmonics(s2[54])
@@ -114,4 +117,4 @@ axs[3].grid()
 axs[3].set_title('All defect modes')
 
 
-plt.show()
+plt.show()'''
