@@ -8,7 +8,7 @@ plt.rcParams['lines.linewidth'] = 2.5
 
 
 def fft(sample_sensor):
-    fs = 1/500
+    fs = 1/1000
     fourier = np.fft.fft(sample_sensor)
     freqs = np.fft.fftfreq(sample_sensor.size,d=fs)
     power_spectrum = np.abs(fourier)
@@ -22,8 +22,8 @@ def fourier_signal_normalization_harmonics(sample):
     amp_list =[]
     freq_list =[]
 
-    #for i in range(150,200):
-    for i in range(0,len(amp)):
+    for i in range(100,250):
+    #for i in range(0,len(amp)):
         amp_list.append(amp[i])
         freq_list.append(freq[i])
 
@@ -83,12 +83,19 @@ all --> 54
 dm --> 58
 
 '''
-fft_log_plot(0)
+'''fft_log_plot(0)
 fft_log_plot(1)
 fft_log_plot(54)
-fft_log_plot(58)
+fft_log_plot(58)'''
 
-'''__,s2,s3,s4,__ = X_set(path,'none')
+
+print(y_set(path)['defect'][3])
+print(y_set(path)['defect'][1])
+print(y_set(path)['defect'][55])
+print(y_set(path)['defect'][20])
+
+
+__,s2,s3,s4,__ = X_set(path,'none')
 dd = fourier_signal_normalization_harmonics(s2[0])
 df = fourier_signal_normalization_harmonics(s2[1])
 all = fourier_signal_normalization_harmonics(s2[54])
@@ -117,4 +124,4 @@ axs[3].grid()
 axs[3].set_title('All defect modes')
 
 
-plt.show()'''
+plt.show()
