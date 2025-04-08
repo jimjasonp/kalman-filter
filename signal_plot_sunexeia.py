@@ -22,7 +22,7 @@ def fourier_signal_normalization_harmonics(sample):
     amp_list =[]
     freq_list =[]
 
-    for i in range(100,250):
+    for i in range(170,250):
     #for i in range(0,len(amp)):
         amp_list.append(amp[i])
         freq_list.append(freq[i])
@@ -89,17 +89,11 @@ fft_log_plot(54)
 fft_log_plot(58)'''
 
 
-print(y_set(path)['defect'][3])
-print(y_set(path)['defect'][1])
-print(y_set(path)['defect'][55])
-print(y_set(path)['defect'][20])
-
-
 __,s2,s3,s4,__ = X_set(path,'none')
-dd = fourier_signal_normalization_harmonics(s2[0])
-df = fourier_signal_normalization_harmonics(s2[1])
-all = fourier_signal_normalization_harmonics(s2[54])
-dm = fourier_signal_normalization_harmonics(s2[58])
+dd = fourier_signal_normalization_harmonics(s3[0])
+df = fourier_signal_normalization_harmonics(s3[1])
+all = fourier_signal_normalization_harmonics(s3[54])
+dm = fourier_signal_normalization_harmonics(s3[58])
 fig,axs = plt.subplots(4,sharex=True,sharey=True)
 
 

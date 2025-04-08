@@ -56,6 +56,22 @@ plt.legend(['s2','s3','s4'])
 plt.show()'''
 
 
+
+plt.title('Signal with FFT transformation in log scale of sensor 3 (all defect modes)')
+plt.xlabel( 'Frequency (kHz)')
+plt.ylabel('Amplitude (v)')
+plt.plot(s3[1],s3[0])
+plt.grid()
+plt.annotate('Excitation frequency (125kHz)', xy=(125,-4), xytext=(200, -3),
+arrowprops=dict(facecolor='black', shrink=0.2))
+plt.annotate('Harmonic (250 kHz)', xy=(250,-10), xytext=(120,-12),
+arrowprops=dict(facecolor='black', shrink=0.2))
+plt.show()
+
+
+
+
+
 fig,axs = plt.subplots(3,sharex=True,sharey=True)
 fig.suptitle('Signal with FFT transformation in log scale (all defect modes)')
 fig.text(0.5 , 0.04, 'Frequency (kHz)',ha = 'center')
