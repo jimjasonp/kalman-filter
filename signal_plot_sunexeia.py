@@ -97,7 +97,7 @@ dm = fourier_signal_normalization_harmonics(s3[58])
 fig,axs = plt.subplots(4,sharex=True,sharey=True)
 
 
-fig.suptitle(f'Harmonics in log scale of sensor 2')
+fig.suptitle(f'Harmonics in log scale of sensor 3')
 fig.text(0.5 , 0.04, 'Frequency (kHz)',ha = 'center')
 fig.text(0.04 , 0.5, 'Amplitude (v)',va = 'center',rotation = 'vertical')
 
