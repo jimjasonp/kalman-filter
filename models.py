@@ -217,38 +217,20 @@ def cnn_class(X_train,y_train,X_test):
 def mlp_classifier(X_train,y,X_test):
 
     import tensorflow as tf
-
     from tensorflow import keras
-
     from keras.models import Sequential
-
     from keras.layers import Flatten,Dense
 
 
     mlp = Sequential()
-    # Flatten input from 28x28 images to 784 (28*28) vector
-    #mlp.add(Flatten(input_shape=(None, 2250)))
-
-    # Dense layer 1 (256 neurons)
     mlp.add(Dense(256, activation='sigmoid'))
-
-    # Dense layer 2 (128 neurons)
     mlp.add(Dense(128, activation='sigmoid'))
-
-
     mlp.add(Dense(64, activation='sigmoid'))
+    mlp.add(Dense(4))
 
-    #mlp.add(Dense(32, activation='sigmoid'))
-    # Output layer (10 classes)
+    mlp.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits = True), metrics=['accuracy'])
 
-
-    mlp.add(Dense(3, activation='sigmoid'))
-
-    #mlp.add(Dense(1, activation='linear'))
-
-
-    mlp.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-
-    history = mlp.fit(X_train, y, epochs=150,verbose=0)
+    mlp.fit(X_train, y, epochs=150,verbose=0)
     y_pred = mlp.predict(X_test)
+    y_pred = tf.argmax(y_pred, axis=1).numpy()
     return y_pred
