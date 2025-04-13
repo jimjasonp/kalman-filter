@@ -161,6 +161,59 @@ def mlp(X_train,y,X_test):
     return y_pred.ravel().tolist()
 
 
+
+
+def cnn_reg(X_train,y_train,X_test):
+
+    import tensorflow as tf
+    from tensorflow import keras
+    from keras import layers  
+    from keras.models import Sequential
+
+    model = Sequential([
+    #layers.Rescaling(1./255),
+    layers.Conv1D(16,3, padding = 'same', activation='relu'),
+    layers.MaxPooling1D(),
+    layers.Conv1D(32,3,padding='same',activation='relu'),
+    layers.MaxPooling1D(),
+    layers.Conv1D(64,3,padding='same',activation='relu'),
+    layers.MaxPooling1D(),
+    layers.Flatten(),
+    layers.Dropout(0.2),
+    layers.Dense(1)
+    ])
+    model.compile(optimizer='adam',loss="mean_absolute_error")
+    model.fit(X_train,y_train,epochs=100,verbose = 0)
+    y_pred = model.predict(X_test)
+    
+    return y_pred.ravel().tolist()
+
+
+def cnn_class(X_train,y_train,X_test):
+
+    import tensorflow as tf
+    from tensorflow import keras
+    from keras import layers  
+    from keras.models import Sequential
+
+    model = Sequential([
+    #layers.Rescaling(1./255),
+    layers.Conv1D(16,3, padding = 'same', activation='relu'),
+    layers.MaxPooling1D(),
+    layers.Conv1D(32,3,padding='same',activation='relu'),
+    layers.MaxPooling1D(),
+    layers.Conv1D(64,3,padding='same',activation='relu'),
+    layers.MaxPooling1D(),
+    layers.Flatten(),
+    layers.Dropout(0.2),
+    layers.Dense(4)
+    ])
+    model.compile(loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits = True),metrics = ['accuracy'])
+    model.fit(X_train,y_train,epochs=150,verbose = 0)
+    y_pred = model.predict(X_test)
+    y_pred = tf.argmax(y_pred, axis=1).numpy()
+    return y_pred
+
 def mlp_classifier(X_train,y,X_test):
 
     import tensorflow as tf

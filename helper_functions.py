@@ -883,6 +883,7 @@ def parity_plot(y_true,y_pred,model,mode):
     if model.__name__ =='mlp' : name = 'MLP'
     if model.__name__ =='linear_regression' : name = 'Linear Regression'
     if model.__name__ =='decision_tree_reg' : name = 'Decision Trees'
+    if model.__name__ =='cnn_reg' : name = 'CNN'
     plt.title(f'Parity plot of {name}')
     plt.legend(["y_values", "y=x"], loc="lower right")
     if mode=='save':
@@ -968,7 +969,7 @@ def confusion_matrix_display(y_true,y_pred,model,mode,accuracy):
     if model.__name__ =='svc' : name = 'Support Vector Machines'
     if model.__name__ =='random_forest_clf' : name = 'Random Forest'
     if model.__name__ =='xgb_clf' : name = 'XGB'
-
+    if model.__name__ =='cnn_class' : name = 'CNN'
     cm = confusion_matrix(y_true,y_pred)
     disp = ConfusionMatrixDisplay(cm)
     disp.plot()
