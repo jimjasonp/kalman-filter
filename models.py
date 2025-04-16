@@ -169,6 +169,10 @@ def cnn_reg(X_train,y_train,X_test):
     from tensorflow import keras
     from keras import layers  
     from keras.models import Sequential
+    import numpy as np
+
+    X_train = np.expand_dims(X_train, axis=-1)
+    X_test = np.expand_dims(X_test, axis=-1)
 
     model = Sequential([
     #layers.Rescaling(1./255),
@@ -195,6 +199,11 @@ def cnn_class(X_train,y_train,X_test):
     from tensorflow import keras
     from keras import layers  
     from keras.models import Sequential
+    import numpy as np
+
+    X_train = np.expand_dims(X_train, axis=-1)
+    X_test = np.expand_dims(X_test, axis=-1)
+
 
     model = Sequential([
     #layers.Rescaling(1./255),
