@@ -558,6 +558,9 @@ dinei san output to spectrogram tou shmatos
 pairnei san input ena shma kai ypologizei to wavelet tou shmatos
 dinei san output to wavelet
 
+---> noise adder (add_noiz)
+pairnei san input ena X_set kai prosthetei noise
+dinei san output to X_set opou exei prostethei o thorubos
 '''
 
 def fourier(sample_sensor):
@@ -646,6 +649,17 @@ def wavelet(sample):
 
     #plt.tight_layout()
     #plt.show()
+
+def add_noiz(X_set,mean,stdev):
+    import numpy as np
+    X_set_new =[]
+    for sample in X_set:
+        noise = np.random.normal(mean,stdev, len(sample))
+        sample = sample+noise
+        X_set_new.append(sample)
+
+    X_set = X_set_new
+    return X_set
 
 ########################################################################
 
