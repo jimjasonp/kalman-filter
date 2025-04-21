@@ -1213,13 +1213,15 @@ def all_sensor_fft_plot_together(path,index):
 
 
 def single_sensor_fft_plot(path,index):
-    import matplotlib.pyplot as plt
-    import numpy as np
 
     '''
     gia na fainetai omorfo bale path = 'random_data' kai index 10 
-    
     '''
+    
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+
     __,s2,s3,s4,__ = X_set(path,'none')
 
     s2 = fourier(s2[index])
