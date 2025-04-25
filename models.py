@@ -192,6 +192,64 @@ def cnn_reg(X_train,y_train,X_test):
     
     return y_pred.ravel().tolist()
 
+def lstm_reg(X_train,y_train,X_test):
+
+    import numpy as np
+    import pandas as pd
+    import tensorflow as tf
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import LSTM, Dense, Dropout
+
+
+    X_train = np.expand_dims(X_train, axis=1)
+    X_test = np.expand_dims(X_test, axis=1)
+
+
+    model = Sequential([
+        LSTM(100, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2])),
+        Dropout(0.3),
+        LSTM(50),
+        Dropout(0.3),
+        Dense(50, activation="relu"),
+        Dense(1)])
+
+    model.compile(loss='mean_squared_error',optimizer='adam',metrics=['mae'])
+    model.fit(X_train, y_train, epochs=150, verbose=0)
+
+    return model.predict(X_test).flatten()
+
+def lstm_class(X_train,y_train,X_test):
+
+    import numpy as np
+    import pandas as pd
+    import tensorflow as tf
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import LSTM, Dense, Dropout
+
+
+    X_train = np.expand_dims(X_train, axis=1)
+    X_test = np.expand_dims(X_test, axis=1)
+
+    model = Sequential([
+        LSTM(100, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2])),
+        Dropout(0.3),
+        LSTM(50),
+        Dropout(0.3),
+        Dense(50, activation="relu"),
+        Dense(4, activation="softmax")])
+
+    model.compile(
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
+        metrics=['accuracy'])
+
+    # Train the model
+    model.fit(X_train, y_train, epochs=150, verbose=0)
+
+    # Predict and evaluate
+    y_pred = model.predict(X_test)
+    y_pred = tf.argmax(y_pred, axis=1).numpy()
+    return y_pred
+
 
 def cnn_class(X_train,y_train,X_test):
 
