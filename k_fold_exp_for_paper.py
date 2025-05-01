@@ -69,16 +69,3 @@ model = mlp_reg
 cv = KFold(n_splits=10,shuffle=True,random_state=1)
 scores = cross_val_score(model, X, y, scoring=scoring, cv=cv, n_jobs=-1)
 print(np.mean(np.absolute(scores)))
-
-
-
-'''for i in range(0,100):
-    cv = KFold(n_splits=10,shuffle=True,random_state=1)
-    scores = cross_val_score(rf, X, y, scoring='neg_mean_absolute_percentage_error', cv=cv, n_jobs=-1)
-    acc_per_fold = np.absolute(scores)
-    mean_acc = np.mean(acc_per_fold)
-    std_acc = np.std(acc_per_fold)
-    mean_mape_list.append(mean_acc)
-    std_mape_list.append(std_acc)
-
-print(mean_mape_list,std_mape_list)'''
