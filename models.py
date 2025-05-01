@@ -105,7 +105,7 @@ def knn(X_train,y,X_test):
 
 def svc(X_train,y,X_test):
     from sklearn.svm import SVC
-    svm = SVC(C=100,gamma=0.001,kernel='rbf')
+    svm =SVC(C=100,gamma=0.001,kernel='rbf')
     svm.fit(X_train,y)
     y_pred = svm.predict(X_test)
     return y_pred
@@ -132,7 +132,12 @@ def logistic_regression(X_train,y,X_test):
     y_pred = lr.predict(X_test)
     return y_pred
 
-def mlp(X_train,y,X_test):
+
+
+
+##################----------- NNs-----------##################
+
+def mlp_regressor(X_train,y,X_test):
     '''
     paizei kala mono gia scaled !!!!!!!!!!!!!!!!!!!!!
     
@@ -218,6 +223,60 @@ def lstm_reg(X_train,y_train,X_test):
 
     return model.predict(X_test).flatten()
 
+
+
+def mlp_classifier(X_train,y,X_test):
+
+    import tensorflow as tf
+    from tensorflow import keras
+    from keras.models import Sequential
+    from keras.layers import Flatten,Dense
+
+
+    mlp = Sequential()
+    mlp.add(Dense(256, activation='sigmoid'))
+    mlp.add(Dense(128, activation='sigmoid'))
+    mlp.add(Dense(64, activation='sigmoid'))
+    mlp.add(Dense(4))
+
+    mlp.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits = True), metrics=['accuracy'])
+
+    mlp.fit(X_train, y, epochs=150,verbose=0)
+    y_pred = mlp.predict(X_test)
+    y_pred = tf.argmax(y_pred, axis=1).numpy()
+    return y_pred
+
+def cnn_class(X_train,y_train,X_test):
+
+    import tensorflow as tf
+    from tensorflow import keras
+    from keras import layers  
+    from keras.models import Sequential
+    import numpy as np
+
+    X_train = np.expand_dims(X_train, axis=-1)
+    X_test = np.expand_dims(X_test, axis=-1)
+
+
+    model = Sequential([
+    #layers.Rescaling(1./255),
+    layers.Conv1D(16,3, padding = 'same', activation='relu'),
+    layers.MaxPooling1D(),
+    layers.Conv1D(32,3,padding='same',activation='relu'),
+    layers.MaxPooling1D(),
+    layers.Conv1D(64,3,padding='same',activation='relu'),
+    layers.MaxPooling1D(),
+    layers.Flatten(),
+    layers.Dropout(0.2),
+    layers.Dense(4)
+    ])
+    model.compile(loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits = True),metrics = ['accuracy'])
+    model.fit(X_train,y_train,epochs=150,verbose = 0)
+    y_pred = model.predict(X_test)
+    y_pred = tf.argmax(y_pred, axis=1).numpy()
+    return y_pred
+
+
 def lstm_class(X_train,y_train,X_test):
 
     import numpy as np
@@ -251,53 +310,45 @@ def lstm_class(X_train,y_train,X_test):
     return y_pred
 
 
-def cnn_class(X_train,y_train,X_test):
-
-    import tensorflow as tf
-    from tensorflow import keras
-    from keras import layers  
-    from keras.models import Sequential
-    import numpy as np
-
-    X_train = np.expand_dims(X_train, axis=-1)
-    X_test = np.expand_dims(X_test, axis=-1)
 
 
-    model = Sequential([
-    #layers.Rescaling(1./255),
-    layers.Conv1D(16,3, padding = 'same', activation='relu'),
-    layers.MaxPooling1D(),
-    layers.Conv1D(32,3,padding='same',activation='relu'),
-    layers.MaxPooling1D(),
-    layers.Conv1D(64,3,padding='same',activation='relu'),
-    layers.MaxPooling1D(),
-    layers.Flatten(),
-    layers.Dropout(0.2),
-    layers.Dense(4)
-    ])
-    model.compile(loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits = True),metrics = ['accuracy'])
-    model.fit(X_train,y_train,epochs=150,verbose = 0)
-    y_pred = model.predict(X_test)
-    y_pred = tf.argmax(y_pred, axis=1).numpy()
-    return y_pred
 
-def mlp_classifier(X_train,y,X_test):
 
+def keras_mlp_regressor(input_shape):
+    '''
+    paizei kala mono gia scaled !!!!!!!!!!!!!!!!!!!!!
+    
+    '''
     import tensorflow as tf
     from tensorflow import keras
     from keras.models import Sequential
     from keras.layers import Flatten,Dense
 
-
     mlp = Sequential()
-    mlp.add(Dense(256, activation='sigmoid'))
+    mlp.add(Dense(256, activation='sigmoid', input_shape=input_shape))
+    # Dense layer 2 (128 neurons)
     mlp.add(Dense(128, activation='sigmoid'))
     mlp.add(Dense(64, activation='sigmoid'))
-    mlp.add(Dense(4))
+    #mlp.add(Dense(32, activation='sigmoid'))
+    # Output layer (10 classes)
+    mlp.add(Dense(10, activation='sigmoid'))
+    mlp.add(Dense(1, activation='linear'))
 
-    mlp.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits = True), metrics=['accuracy'])
+    mlp.compile(loss="mean_absolute_error", optimizer="adam")
+    
+    return mlp
 
-    mlp.fit(X_train, y, epochs=150,verbose=0)
-    y_pred = mlp.predict(X_test)
-    y_pred = tf.argmax(y_pred, axis=1).numpy()
-    return y_pred
+def keras_mlp_classifier(input_shape):
+    import tensorflow as tf
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import Dense
+
+    model = Sequential()
+    model.add(Dense(256, activation='sigmoid', input_shape=input_shape))
+    model.add(Dense(128, activation='sigmoid'))
+    model.add(Dense(64, activation='sigmoid'))
+    model.add(Dense(4))  # No activation for logits
+    model.compile(optimizer='adam',
+                  loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                  metrics=['accuracy'])
+    return model
