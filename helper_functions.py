@@ -452,6 +452,11 @@ def fourier_nrm_with_props_vector(path):
 
 C) HARMONICS WITH NORMALIZATION 
 
+
+---> fourier harmonics (fourier_harmonics)
+takes as input a signal sample and applies the fft transformation. The output is the amplitude and the frequency of the dominant harmonic.
+
+
 ta tria parakatw functions leitourgoun mazi
 gia na parw tis armonikes apo to kanonikopoihmeno shma xrhsimopoiw to fourier nrm vector
 to opoio pairnei san input to path kai to output einai oi armonikes tou kanonikopoihmenou shmatos
@@ -472,6 +477,25 @@ To input einai to path kai efarmozei thn sunarthsh fourier_vector_maker gia olou
 To input einai to path kai to output einai oi concatenated normalized armonikes olwn twn samples sto path
 
 '''
+
+def fourier_harmonics(sample):
+    
+    import numpy as np
+
+    amp= fourier(sample)[0]
+    freq= np.abs(fourier(sample)[1])
+    amp_list =[]
+    freq_list =[]
+
+    for i in range(170,250):
+        amp_list.append(amp[i])
+        freq_list.append(freq[i])
+
+    amp = np.array(amp_list)
+    freq = np.array(freq_list)
+    return amp,freq
+
+
 def fourier_signal_normalization_harmonics(sample):
     import numpy as np
     
@@ -483,14 +507,11 @@ def fourier_signal_normalization_harmonics(sample):
 
     amp_list =[]
     freq_list =[]
-    bound = int(0.5*len(amp))
-    #max_amp = max(amp)
     max_amp = -max(amp)
     max_freq = abs(freq[amp.argmax()])
 
     for i in range(150,200):
         amp_list.append(amp[i]/max_amp)
-        #amp_list.append(1/(amp[i]/max_amp))
         freq_list.append(freq[i]/max_freq)
 
     amp = np.array(amp_list)
@@ -597,7 +618,6 @@ def pwelch(sample_sensor):
 def psd(sample_sensor):
 
     from scipy import signal
-    
 
     fs = 1000
     # f contains the frequency components
@@ -804,76 +824,258 @@ def data_mixer(X_1,y_1,X_2,y_2,first_percentage,second_percentage):
 '''
 5) PLOTS
 
----> bar plots specific for regression or classification, pairnei data sizes (bar_res_plot)
-Gia to mode regression pairnei san input ta modela pou etreksa kai tis times twn mape twn diaforwn megethwn tou dataset pou etreksan (min,mid,max) kai ta onomata twn montelwn pou etreksan
-kai dinei san output ta bar plots twn mape gia kathe montelo. Gia to mode classification kanei to idio alla anti gia mape dinei times accuracy
+
+
+---> figures with subplots of all damage scenarios for every sensor(all_damage_every_sensor_separate)
+takes as input the data path and a list that contains tuples which contain the indexes of each sample, the damage 
+percentage values or defects, the color of the line, and the linestyle. It plots three figures, one for every sensor,
+each figure contains subplots of all damage scenarios of the given samples.
+
+---> figure of all damage scenarios for every sensor(all_damage_every_sensor_together)
+takes as input the data path and a list that contains tuples which contain the indexes of each sample, the damage 
+percentage values or defects, the color of the line, and the linestyle. It plots three figures, one for every sensor,
+each figure contains plots of all damage scenarios of the given samples.
+
+---> signal plot of every sensor (all_sensor_time_plot_separate)
+takes as input the data path and the index of the sample that is plotted. Plots three subplots of the 
+time signal of every sensor for the sample of that index.
+
+---> fft plot of every sensor (all_sensor_fft_plot_separate)
+takes as input the data path and the index of the sample that is plotted. Plots three subplots of the 
+fft of every sensor for the sample of that index.
+
+---> fft plot of a single sensor (single_sensor_fft_plot)
+takes as input the data path the index of the sample that is plotted and the name of the defect and plots the fft of sensor 3. 
+Two arrows show the excitation frequency and the dominant harmonic frequency.
+
+---> harmonics plot for every defect mode (every_defect_mode_harmonics_plot)
+takes as input the data path and the sample indexes for every kind of defect(dd,df,dm,all) and plots 4
+subplots of the harmonics of every defect mode for one sensor
 
 ---> parity plots it can either save or show the plot (parity_plot)
 pairnei san input to y_test to y_pred to montelo kai to mode dhladh an thelw na kanw save h aplws na dw to plot
 bgazei to parity plot tou y_test me to y_pred kai eite to kanei save eite to deixnei
 
 
----> 3d scatter plot for classification (scatterplot_3d_classification)
-pairnei san input to x kai to y kai bgazei ena 3d scatter plot twn triwn prwtn features tou x me tis antistoixes times y
-oi times tou y einai to xrwma tou kathe shmeiou
-
----> 2d plot twn shmatwn kathe sensora (separate_sensors_plot)
-pairnei to onoma tou defect kai to shma kathe sensora ksewxwrista kai to plotarei
-oi times y einai to amplitude kai to x einai to sample
-
----> 2d plot tou sunolikou shmatos (total_normalized_scatter)
-pairnei san input to onoma tou defect kai ena sample apo concatenated normalized 
-shma kai dinei san output to plot opou o aksonas y einai to normalized amplitude 
-kai o x einai to datapoint 
-
----> 2d scatter tou sunolikou shmatos(total_normalized_plot)
-pairnei san input to onoma tou defect kai ena sample apo
-concatenated normalized shma kai dinei san output to scatter opou o aksonas 
-y einai to normalized amplitude kai o x einai h suxnothta 
-
-
 ---> confusion matrix gia to classification task (confusion_matrix_display)
-
 pairnei san input ta y_true,y_pred,model,mode,accuracy kai bgazei to confusion matrix me titlo
 to onoma tou montelou kai to accuracy tou. To montelo prepei na einai function kai to mode einai 
 eite show eite save.
 
----> 2d plot gia decision boundaries (decision_bounds_plot)
 
-Pairnei san input to X_train to y_train kai to montelo pou etreksa kai bgazei ena 2d plot twn decision boundaries.
-Prepei prwta na exw kanei fit to montelo kai oi classes na einai arithmoi
+---> regression results bar chart (regression_results_bar_charts)
+the inputs are the model names, the mape values, the standard deviation values, the p-value values as lists and the label on y axis.
+
+---> classification results bar chart (classification_results_bar_charts)
+the inputs are the model names, the mape values, the standard deviation values, the p-value values as lists and the label on y axis.
+
 '''
 
-def bar_res_plot(model_list,min,mid,max,name_list,mode):
-    
-    
+
+def all_damage_every_sensor_separate(path,index_list):
+    import matplotlib.pyplot as plt
     import numpy as np
+    from helper_functions import fourier, X_set
+
+    plt.rcParams.update({'font.size': 12})
+    plt.rcParams['lines.linewidth'] = 2.5
+
+    __, s2, s3, s4, __ = X_set(path, 'none')
+    sensor_list = [(s2, 'sensor 2'), (s3, 'sensor 3'), (s4, 'sensor 4')]
+
+    for sensor_data, sensor_name in sensor_list:
+        num_plots = len(index_list)
+        fig, axs = plt.subplots(num_plots, 1, figsize=(10, 2.8 * num_plots), sharex=True)
+
+        if num_plots == 1:
+            axs = [axs]
+
+        for ax, (idx, label, color, linestyle) in zip(axs, index_list):
+            fft_amplitude, fft_freq = fourier(sensor_data[idx])
+            ax.plot(np.abs(fft_freq), fft_amplitude,
+                    color=color, linestyle=linestyle, label=label)
+            ax.grid(True)
+            ax.legend(loc='upper right')
+            #ax.set_title(f'{sensor_name} - {label}')
+
+        axs[-1].set_xlabel('Frequency (kHz)')
+
+        fig.text(0.04, 0.5, 'Log Amplitude (V)', va='center', rotation='vertical', fontsize=16)
+        fig.suptitle(f'FFT plots of {sensor_name}', fontsize=18)
+        fig.tight_layout(rect=[0.06, 0, 1, 0.95])
+        plt.show()
+
+
+def all_damage_every_sensor_together(path,index_list):
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from helper_functions import fourier, X_set
+
+    plt.rcParams.update({'font.size': 16})
+    plt.rcParams['lines.linewidth'] = 2.5
+
+    __, s2, s3, s4, __ = X_set(path, 'none')
+    sensor_list = [(s2, 'sensor 2'), (s3, 'sensor 3'), (s4, 'sensor 4')]
+
+    for sensor_data, sensor_name in sensor_list:
+        plt.figure()
+        legend_list = []
+        y_offset = 0 
+
+        for idx, damage, linecolor, linestyle in index_list:
+            fft_amplitude, fft_freq = fourier(sensor_data[idx])
+            
+            amplitude_with_offset = fft_amplitude + y_offset
+            plt.plot(np.abs(fft_freq), amplitude_with_offset, color=linecolor, linestyle=linestyle)
+            legend_list.append(f"{damage} (offset {y_offset})")
+            y_offset += 2.5
+
+        plt.title(f'FFT in log scale of {sensor_name}')
+        plt.xlabel('Frequency (kHz)')
+        plt.ylabel('Log Amplitude + Offset')
+        plt.legend(legend_list)
+        plt.grid(True)
+        plt.show()
+
+def all_sensor_time_plot_separate(path,index):
     import matplotlib.pyplot as plt
 
-    X_axis = np.arange(len(model_list)) 
+    __,s2,s3,s4,__ = X_set(path,'none')
 
-    plt.bar(X_axis - 0.25, min, 0.2, label = '75 training samples')
+    s2 = s2[index]
+    s3 = s3[index]
+    s4 = s4[index]
+
+    plt.rcParams.update({'font.size': 16})
+    plt.rcParams['lines.linewidth'] = 2.5
     
-    #for index, value in enumerate(min):
-    #    plt.text(value, index,str(value))
+    fig,axs = plt.subplots(3,sharex=True,sharey=True)
+    fig.suptitle('Signal from all sensors (all defect modes)')
+    fig.text(0.5 , 0.04, 'time (ms)',ha = 'center')
+    fig.text(0.04 , 0.5, 'Electric potential (v)',va = 'center',rotation = 'vertical')
+
+    axs[0].plot(s2)
+    axs[0].grid()
+    axs[0].set_title('s2')
+
+    axs[1].plot(s3)
+    axs[1].grid()
+    axs[1].set_title('s3')
+
+    axs[2].plot(s4)
+    axs[2].grid()
+    axs[2].set_title('s4')
+
+    plt.show()
+
+
+def all_sensor_fft_plot_separate(path,index):
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    __,s2,s3,s4,__ = X_set(path,'none')
+
+    s2 = fourier(s2[index])
+    s3 = fourier(s3[index])
+    s4 = fourier(s4[index])
+
+    plt.rcParams.update({'font.size': 16})
+    plt.rcParams['lines.linewidth'] = 2.5
+
+    fig,axs = plt.subplots(3,sharex=True,sharey=True)
+    fig.suptitle('Signal with FFT transformation in log scale (all defect modes)')
+    fig.text(0.5 , 0.04, 'Frequency (kHz)',ha = 'center')
+    fig.text(0.04 , 0.5, 'Amplitude (v)',va = 'center',rotation = 'vertical')
+
+    axs[0].plot(np.abs(s2[1]),s2[0])
+    axs[0].grid()
+    axs[0].set_title('s2')
+
+    axs[1].plot(np.abs(s3[1]),s3[0])
+    axs[1].grid()
+    axs[1].set_title('s3')
+
+    axs[2].plot(np.abs(s4[1]),s4[0])
+    axs[2].grid()
+    axs[2].set_title('s4')
+
+    plt.show()
+
+
+def single_sensor_fft_plot(path,index,defect):
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    '''
+    gia na fainetai omorfo bale path = 'random_data' kai index 10 
     
-    plt.bar(X_axis , mid, 0.2, label = '112 training samples')
-    #for index, value in enumerate(mid):
-    #    plt.text(value, index,str(value))
+    '''
+    __,s2,s3,s4,__ = X_set(path,'none')
+
+    s2 = fourier(s2[index])
+    s3 = fourier(s3[index])
+    s4 = fourier(s4[index])
+
+    plt.rcParams.update({'font.size': 16})
+    plt.rcParams['lines.linewidth'] = 2.5
     
-    plt.bar(X_axis + 0.25 , max, 0.2, label = '225 training samples')
-    #for index, value in enumerate(max):
-    #    plt.text(value, index,str(value))
-    
-    plt.xticks(X_axis, name_list)
-    plt.xlabel("Models")
-    if mode =='regression':
-        plt.ylabel("Mean absolute Percentage error")
-        plt.title(f"MAPE of models with different training sizes ")
-    if mode =='classification':
-        plt.ylabel("Accuracy")
-        plt.title(f"Accuracy of models with different training sizes ")
-    plt.legend() 
+    plt.title(f'Signal with FFT transformation in log scale of sensor 3 ({defect})')
+    plt.xlabel( 'Frequency (kHz)')
+    plt.ylabel('Amplitude (v)')
+    plt.plot(np.abs(s3[1]),s3[0])
+    plt.grid()
+    plt.annotate('Excitation frequency (125kHz)', xy=(125,-4), xytext=(200, -3),
+    arrowprops=dict(facecolor='black', shrink=0.2))
+    plt.annotate('Dominant harmonic (250 kHz)', xy=(250,-10), xytext=(120,-12),
+    arrowprops=dict(facecolor='black', shrink=0.2))
+    plt.show()
+
+def every_defect_mode_harmonics_plot(path,dd_index,df_index,all_index,dm_index):
+
+    '''
+    gia na bgei vraiao ...
+    path = 'Balanced_data'
+
+    dd --> 0
+    df --> 1
+    all --> 54
+    dm --> 58
+    '''
+
+    import matplotlib.pyplot as plt
+
+    plt.rcParams.update({'font.size': 16})
+    plt.rcParams['lines.linewidth'] = 2.5
+    __,s2,s3,s4,__ = X_set(path,'none')
+
+    dd = fourier_harmonics(s3[dd_index])
+    df = fourier_harmonics(s3[df_index])
+    all = fourier_harmonics(s3[all_index])
+    dm = fourier_harmonics(s3[dm_index])
+    fig,axs = plt.subplots(4,sharex=True,sharey=True)
+
+
+    fig.suptitle(f'Harmonics in log scale of sensor 3')
+    fig.text(0.5 , 0.04, 'Frequency (kHz)',ha = 'center')
+    fig.text(0.04 , 0.5, 'Amplitude (v)',va = 'center',rotation = 'vertical')
+
+    axs[0].plot(df[1],df[0])
+    axs[0].grid()
+    axs[0].set_title('Fiber failure')
+
+    axs[1].plot(dm[1],dm[0])
+    axs[1].grid()
+    axs[1].set_title('Matrix failure')
+
+    axs[2].plot(dd[1],dd[0])
+    axs[2].grid()
+    axs[2].set_title('Delamination')
+
+    axs[3].plot(all[1],all[0])
+    axs[3].grid()
+    axs[3].set_title('All defect modes')
+
+
     plt.show()
 
 
@@ -907,73 +1109,6 @@ def parity_plot(y_true,y_pred,model,mode):
     elif mode =='show':
         plt.show()
 
-def scatterplot_3d_classification(X_data,y_data):
-    
-
-    '''
-    paizei an exw kanei prwta pca 
-    
-    
-    '''
-    import matplotlib.pyplot as plt
-    import numpy as np
-    y_data = np.array(y_data)
-    fig = plt.figure()
-    plt.clf()
-    ax = fig.add_subplot(projection='3d')
-    x,y,z = X_data[0],X_data[1],X_data[2]
-    c=[]
-    for i in range(0,len(y_data)):
-        if y_data[i] == 'dm':c.append(0)
-        if y_data[i] == 'df':c.append(1)
-        if y_data[i] == 'dd':c.append(2)
-        if y_data[i] == 'all defect modes':c.append(3)
-        if y_data[i] == 'clean':c.append(4)
-
-    img = ax.scatter(x, y, z,c=c, cmap=plt.hot())
-    fig.colorbar(img)
-    ax.set_xlabel('X Label')
-    ax.set_ylabel('Y Label')
-    ax.set_zlabel('Z Label')
-    plt.show()
-
-
-def separate_sensors_plot(defect,sample_s2,sample_s3,sample_s4):
-    import matplotlib.pyplot as plt
-    plt.clf()
-    plt.plot(sample_s2)
-    plt.plot(sample_s3)
-    plt.plot(sample_s4)
-    plt.title(f'{defect}')
-    plt.legend(['s2','s3','s4'],loc = 'lower right')
-    plt.ylabel('normalized amplitude')
-    plt.xlabel('sample')
-    '''plt.savefig(f'{defect}_all_sensors_plot.png')
-    plt.close('all')
-    plt.clf()'''
-    plt.show()
-
-
-
-def total_normalized_plot(defect,sample_total):
-    import matplotlib.pyplot as plt
-    plt.clf()
-    plt.plot(sample_total[0])
-    plt.title(f'{defect}')
-    plt.ylabel('normalized amplitude')
-    plt.xlabel('sample')
-    plt.show()
-
-
-
-def total_normalized_scatter(defect,sample_total):
-    import matplotlib.pyplot as plt
-    plt.clf()
-    plt.scatter(sample_total[1],sample_total[0])
-    plt.title(f'{defect}')
-    plt.ylabel('normalized amplitude')
-    plt.xlabel('sample')
-    plt.show()
 
 def confusion_matrix_display(y_true,y_pred,model,mode,accuracy):
     import matplotlib.pyplot as plt
@@ -996,18 +1131,70 @@ def confusion_matrix_display(y_true,y_pred,model,mode,accuracy):
         plt.show()
 
 
-def decision_bounds_plot(X_train,y_train,model):
-
-    '''
-    thelei oi classes na einai arithmoi
-    '''
-
+def regression_results_bar_charts(model_names, mape, std_devs, pvals,ylabel):
+    
     import matplotlib.pyplot as plt
-    from sklearn.inspection import DecisionBoundaryDisplay
+    import numpy as np
 
-    display = DecisionBoundaryDisplay.from_estimator(model,X_train,response_method='predict',xlabel='feature_1', ylabel='feature_2',alpha=0.5)
-    display.ax_.scatter(X_train[0],X_train[1],c=y_train, edgecolor="black")
+    plt.rcParams.update({'font.size': 16})
+    plt.rcParams['lines.linewidth'] = 2.5
+    
+    mape = np.array(mape)
+    std_devs = np.array(std_devs)
+    pvals = np.array(pvals)
+    x = np.arange(len(model_names))
+
+    plt.figure(figsize=(10, 6))
+    bars = plt.bar(x, mape, capsize=5, color='skyblue', edgecolor='black')
+
+    for i, bar in enumerate(bars):
+        height = bar.get_height()
+        label = f'{mape[i]:.6f} ± {std_devs[i]:.6f}\n(p-value: {pvals[i]:.6f})' # bazw eite to F1: eite to p-value:
+        plt.text(bar.get_x() + bar.get_width()/2, height + 0, label, # dipla sto height bazw +/- kapoion arithmo gia na einai pio omorfo
+                 ha='center', va='bottom', fontsize=16)
+
+    plt.xticks(x, model_names, rotation=45, ha='right')
+    plt.ylabel(ylabel)
+    plt.title('Model performance comparison')
+    plt.ylim(0, max(mape + std_devs) -0.02) # sto telo bazw +/- enan arithmo gia na einai pio omorfo to chart
+    plt.tight_layout()
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.show()
+
+
+def classification_results_bar_charts(model_names, accuracies, std_devs, f1_scores,ylabel):
+    
+    
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    plt.rcParams.update({'font.size': 16})
+    plt.rcParams['lines.linewidth'] = 2.5
+
+    accuracies = np.array(accuracies)
+    std_devs = np.array(std_devs)
+    f1_scores = np.array(f1_scores)
+
+    x = np.arange(len(model_names))
+
+    plt.figure(figsize=(10, 6))
+    bars = plt.bar(x, accuracies, capsize=5, color='skyblue', edgecolor='black')
+
+    # Annotate bars with accuracy ± std and f1 score
+    for i, bar in enumerate(bars):
+        height = bar.get_height()
+        label = f'{accuracies[i]:.4f} ± {std_devs[i]:.4f}\n(F1: {f1_scores[i]:.4f})'
+        plt.text(bar.get_x() + bar.get_width()/2, height + 0.01, label,
+                 ha='center', va='bottom', fontsize=16)
+
+    plt.xticks(x, model_names, rotation=45, ha='right')
+    plt.ylabel(ylabel)
+    plt.title('Model performance comparison')
+    plt.ylim(0, max(accuracies + std_devs) + 0.1)
+    plt.tight_layout()
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.show()
+
 
 ########################################################################
 
@@ -1147,458 +1334,3 @@ def grid_search_loo(model,X_train,y_train):
 ########################################################################
 
 ########################################################################
-
-
-
-''''
-
-
-check gia na ta prosthesw
-
-'''
-
-def all_sensor_time_plot_separate(path,index):
-    import matplotlib.pyplot as plt
-
-    __,s2,s3,s4,__ = X_set(path,'none')
-
-    s2 = s2[index]
-    s3 = s3[index]
-    s4 = s4[index]
-
-    plt.rcParams.update({'font.size': 16})
-    plt.rcParams['lines.linewidth'] = 2.5
-    
-    fig,axs = plt.subplots(3,sharex=True,sharey=True)
-    fig.suptitle('Signal from all sensors (all defect modes)')
-    fig.text(0.5 , 0.04, 'time (ms)',ha = 'center')
-    fig.text(0.04 , 0.5, 'Electric potential (v)',va = 'center',rotation = 'vertical')
-
-    axs[0].plot(s2)
-    axs[0].grid()
-    axs[0].set_title('s2')
-
-    axs[1].plot(s3)
-    axs[1].grid()
-    axs[1].set_title('s3')
-
-    axs[2].plot(s4)
-    axs[2].grid()
-    axs[2].set_title('s4')
-
-    plt.show()
-
-def all_sensor_fft_plot_together(path,index):
-    import matplotlib.pyplot as plt
-    import numpy as np
-    __,s2,s3,s4,__ = X_set(path,'none')
-
- 
-    s2 = fourier(s2[index])
-    s3 = fourier(s3[index])
-    s4 = fourier(s4[index])
-
-    plt.rcParams.update({'font.size': 16})
-    plt.rcParams['lines.linewidth'] = 2.5
-    
-    plt.plot(np.abs(s2[1]),s2[0],linestyle ='dashed', dashes = (10,15))
-    plt.plot(np.abs(s3[1]),s3[0],linestyle ='-.')
-    plt.plot(np.abs(s4[1]),s4[0],linestyle ='solid')
-    plt.grid()
-    plt.title('Signal with FFT transformation in log scale (all defect modes)')
-    plt.ylabel('Amplitude (v)')
-    plt.xlabel('Frequency (kHz)')
-    plt.legend(['s2','s3','s4'])
-    plt.show()
-
-
-def single_sensor_fft_plot(path,index):
-
-    '''
-    gia na fainetai omorfo bale path = 'random_data' kai index 10 
-    '''
-    
-    import matplotlib.pyplot as plt
-    import numpy as np
-
-
-    __,s2,s3,s4,__ = X_set(path,'none')
-
-    s2 = fourier(s2[index])
-    s3 = fourier(s3[index])
-    s4 = fourier(s4[index])
-
-    plt.rcParams.update({'font.size': 16})
-    plt.rcParams['lines.linewidth'] = 2.5
-    
-    plt.title('Signal with FFT transformation in log scale of sensor 3 (all defect modes)')
-    plt.xlabel( 'Frequency (kHz)')
-    plt.ylabel('Amplitude (v)')
-    plt.plot(np.abs(s3[1]),s3[0])
-    plt.grid()
-    plt.annotate('Excitation frequency (125kHz)', xy=(125,-4), xytext=(200, -3),
-    arrowprops=dict(facecolor='black', shrink=0.2))
-    plt.annotate('Dominant harmonic (250 kHz)', xy=(250,-10), xytext=(120,-12),
-    arrowprops=dict(facecolor='black', shrink=0.2))
-    plt.show()
-
-
-
-
-def all_sensor_fft_plot_separate(path,index):
-    import matplotlib.pyplot as plt
-    import numpy as np
-
-    __,s2,s3,s4,__ = X_set(path,'none')
-
-    s2 = fourier(s2[index])
-    s3 = fourier(s3[index])
-    s4 = fourier(s4[index])
-
-    plt.rcParams.update({'font.size': 16})
-    plt.rcParams['lines.linewidth'] = 2.5
-
-    fig,axs = plt.subplots(3,sharex=True,sharey=True)
-    fig.suptitle('Signal with FFT transformation in log scale (all defect modes)')
-    fig.text(0.5 , 0.04, 'Frequency (kHz)',ha = 'center')
-    fig.text(0.04 , 0.5, 'Amplitude (v)',va = 'center',rotation = 'vertical')
-
-    axs[0].plot(np.abs(s2[1]),s2[0])
-    axs[0].grid()
-    axs[0].set_title('s2')
-
-    axs[1].plot(np.abs(s3[1]),s3[0])
-    axs[1].grid()
-    axs[1].set_title('s3')
-
-    axs[2].plot(np.abs(s4[1]),s4[0])
-    axs[2].grid()
-    axs[2].set_title('s4')
-
-    plt.show()
-
-
-
-def fourier_harmonics(sample):
-    
-    import numpy as np
-    import matplotlib.pyplot as plt
-
-    amp= fourier(sample)[0]
-    freq= np.abs(fourier(sample)[1])
-    amp_list =[]
-    freq_list =[]
-
-    for i in range(170,250):
-        amp_list.append(amp[i])
-        freq_list.append(freq[i])
-
-    amp = np.array(amp_list)
-    freq = np.array(freq_list)
-    return amp,freq
-
-def single_defect_mode_harmonics_plot(path,index):
-    import matplotlib.pyplot as plt
-    plt.rcParams.update({'font.size': 16})
-    plt.rcParams['lines.linewidth'] = 2.5
-    
-    
-    __,s2,s3,s4,__ = X_set(path,'none')
-    s2 = fourier_harmonics(s2[index])
-    s3= fourier_harmonics(s3[index])
-    s4= fourier_harmonics(s4[index])
-  
-    fig,axs = plt.subplots(3,sharex=True,sharey=True)
-    defect = y_set(path)['defect'][index]
-    if defect =='df':defect ='Fiber failure'
-    if defect =='dm':defect ='Matrix failure'
-    if defect =='dd':defect ='Delamination'
-    fig.suptitle(f'FFT of signal in log scale ({defect})')
-    fig.text(0.5 , 0.04, 'Frequency (kHz)',ha = 'center')
-    fig.text(0.04 , 0.5, 'Amplitude (v)',va = 'center',rotation = 'vertical')
-
-    axs[0].plot(s2[1],s2[0])
-    axs[0].grid()
-    axs[0].set_title('s2')
-
-    axs[1].plot(s3[1],s3[0])
-    axs[1].grid()
-    axs[1].set_title('s3')
-
-    axs[2].plot(s4[1],s4[0])
-    axs[2].grid()
-    axs[2].set_title('s4')
-
-
-    plt.show()
-
-
-
-
-def every_defect_mode_harmonics_plot(path,dd_index,df_index,all_index,dm_index):
-
-    '''
-    gia na bgei vraiao ...
-    path = 'Balanced_data'
-
-    dd --> 0
-    df --> 1
-    all --> 54
-    dm --> 58
-    '''
-
-    import matplotlib.pyplot as plt
-
-    plt.rcParams.update({'font.size': 16})
-    plt.rcParams['lines.linewidth'] = 2.5
-    __,s2,s3,s4,__ = X_set(path,'none')
-
-    dd = fourier_harmonics(s3[dd_index])
-    df = fourier_harmonics(s3[df_index])
-    all = fourier_harmonics(s3[all_index])
-    dm = fourier_harmonics(s3[dm_index])
-    fig,axs = plt.subplots(4,sharex=True,sharey=True)
-
-
-    fig.suptitle(f'Harmonics in log scale of sensor 3')
-    fig.text(0.5 , 0.04, 'Frequency (kHz)',ha = 'center')
-    fig.text(0.04 , 0.5, 'Amplitude (v)',va = 'center',rotation = 'vertical')
-
-    axs[0].plot(df[1],df[0])
-    axs[0].grid()
-    axs[0].set_title('Fiber failure')
-
-    axs[1].plot(dm[1],dm[0])
-    axs[1].grid()
-    axs[1].set_title('Matrix failure')
-
-    axs[2].plot(dd[1],dd[0])
-    axs[2].grid()
-    axs[2].set_title('Delamination')
-
-    axs[3].plot(all[1],all[0])
-    axs[3].grid()
-    axs[3].set_title('All defect modes')
-
-
-    plt.show()
-
-def binary_y_set(path):
-        import numpy as np
-        import pandas as pd
-        import os
-        import glob
-
-        #### paizei mono gia to balanced data###
-        dmg_list = []
-        name_list = []
-        case_list = []
-        defect_list =[]
-        # gia kathe file name sto path pou exw dwsei afairei to .csv kai afairei nan values kai kanei mia lista mono me to damage percentage
-        for filename in glob.glob(os.path.join(path , "meta*")):
-                df = pd.read_csv(filename,sep=' |,', engine='python')
-                dmg_perc = df['Damage_percentage']
-                case = df['caseStudey'][0]
-                dmg_perc = dmg_perc[0]
-                dmg_list.append(dmg_perc)
-                filename = filename.removesuffix('.csv')
-
-                df_defect = df['DamageLayer1'][0] + df['DamageLayer3'][0] + df['DamageLayer5'][0]
-                dm_defect = df['DamageLayer1'][1] + df['DamageLayer3'][1] + df['DamageLayer5'][1]
-                dd_defect = df['DamageLayer2'][0] + df['DamageLayer4'][0]
-
-                if df_defect !=0 and dm_defect !=0 and dd_defect !=0:
-                        defect_list.append('all defect modes')
-                else:
-                        defect_list.append('not all defect modes')
-
-                name_list.append(filename)
-                case_list.append(case)
-
-        # ftiaxnei ena dataframe me to damage percentage kai prosthetei to index number kai kanei sort basei autou 
-        dmg_data = pd.DataFrame({'dmg':dmg_list,'damage_file_name':name_list,'caseStudey':case_list,'defect':defect_list})
-        dmg_data['dmg_index_number'] = [int(i.split('_')[-1]) for i in dmg_data['damage_file_name']]
-        dmg_data = dmg_data.sort_values(by=['dmg_index_number'])
-        return dmg_data
-
-def single_defect_finder(y_pred,X_test,y_test):
-        single_defect_indices_X_test =[]
-        single_defect_indices_y_test =[]
-        for i in range(0,len(y_pred)):
-                if y_pred[i] !='all defect modes':
-                        single_defect_indices_X_test.append(X_test[i])
-                        single_defect_indices_y_test.append(y_test[i])
-        return single_defect_indices_X_test,single_defect_indices_y_test
-
-
-
-def res_class_bar_plot():
-    import pandas as pd
-    import numpy as np
-    import matplotlib.pyplot as plt
-    
-    knn_results = pd.read_csv('knn_results_nrm')
-    knn_results = knn_results['0']
-    knn_mean = np.mean(knn_results)
-    knn_std =  np.std(knn_results)
-
-    lr_results = pd.read_csv('lr_class_res')
-    lr_results = lr_results['0']
-    lr_mean = np.mean(lr_results)
-    lr_std =  np.std(lr_results)
-
-    svm_results = pd.read_csv('svm_class_res')
-    svm_results = svm_results['0']
-    svm_mean = np.mean(svm_results)
-    svm_std=   np.std(svm_results)
-
-
-    barWidth = 0.25
-    fig = plt.subplots(figsize =(12, 8)) 
-
-    mean_list = [svm_mean,knn_mean,lr_mean]
-    std_list = [svm_std,knn_std,lr_std]
-
-
-    br1 = np.arange(len(std_list)) 
-    br2 = [x + barWidth for x in br1] 
-    br3 = [x + barWidth for x in br2] 
-
-    def addlabels(x,y,thesi):
-        for i in range(len(x)):
-            plt.text(i, y[i], y[i], ha = thesi)
-
-    plt.bar(br1, mean_list, color ='r', width = barWidth, 
-            edgecolor ='grey', label ='Mean') 
-    plt.bar(br2, std_list, color ='g', width = barWidth, 
-            edgecolor ='grey', label ='Standard Deviation') 
-
-
-    plt.xlabel('Algorithm', fontweight ='bold', fontsize = 15) 
-    plt.ylabel('Metrics value', fontweight ='bold', fontsize = 15) 
-    plt.xticks([r + barWidth for r in range(len(std_list))], 
-            ['SVM', 'KNN', 'LR'])
-
-    addlabels(br1,mean_list,'right')
-    addlabels(br2,std_list,'left')
-
-    plt.legend()
-    plt.show() 
-
-########################################################
-########################################################
-########################################################
-########################################################
-
-''''
-
-
-GIA PETAMA TA BLEPW PRIN TA SBHSW
-
-'''
-
-
-'''
-
-def fourier_signal_normalization_harmonics(sample):
-
-    import numpy as np
-
-    
-    ########## pairnei san input sample apo raw shma
-    ####### dinei output to amp kai to freq tou kanonikopoihmenou shmatos
-    amp= fourier(sample)[0]
-    freq= fourier(sample)[1]
-
-    amp_list =[]
-    freq_list =[]
-    bound = int(0.5*len(amp))
-    max_amp = -max(amp)
-    max_freq = abs(freq[amp.argmax()])
-
-    #
-    for i in range(0,bound):
-        if freq[i]/max_freq>0.8 and freq[i]/max_freq<1.2 or freq[i]/max_freq>1.8 and freq[i]/max_freq<2.2:
-            amp_list.append(amp[i]/max_amp)
-            freq_list.append(freq[i]/max_freq)
-    
-    freq = np.array(freq_list)
-    amp = np.array(amp_list)
-    from scipy.signal import savgol_filter
-    
-    amp = savgol_filter(amp,5,3)
-
-    return amp,freq
-
-
-
-def fourier_nrm_vector_harmonics(path,min_size):
-
-    import numpy as np
-    
-
-    ########## pairnei san input path
-    ####### dinei output vector kanonikopoihmeno sample me freq
-    from helper_functions import X_set 
-    data= X_set(path,'none')[0]
-    feature_vector=[]
-    freq_vector =[]
-    for sample in data:
-        feature_vector.append(fourier_signal_normalization_harmonics(sample)[0])
-        freq_vector.append(fourier_signal_normalization_harmonics(sample)[1])
-    #### epeidh exw balei thn if sth sunarthsh fourier kathe sample mesa sto feature vector den exei idio megethos
-    ### prepei kathe sample na exei idio megethos gia auto stis periptwseis pou exw parapanw times afairw kapoies
-    
-    min_size_feature_vector =[]
-    min_size_freq_vector =[]
-
-    for sample in feature_vector:
-        sample = np.random.choice(sample, size=min_size, replace=False)
-        min_size_feature_vector.append(sample)
-
-    for sample in freq_vector:
-        sample = np.random.choice(sample, size=min_size, replace=False)
-        min_size_freq_vector.append(sample)
-    
-    feature_vector = min_size_feature_vector
-    freq_vector = min_size_freq_vector
-
-    vector = np.concatenate((feature_vector,freq_vector),axis=1)
-    
-    return vector
-
-
-
-def single_model_result_plot(model,X_train,y,X_test,y_true):
-
-    import matplotlib.pyplot as plt
-    plt.plot(regression_model_run(model,X_train,y,X_test,y_true)[2],marker = 'o')
-    plt.plot(regression_model_run(model,X_train,y,X_test,y_true)[3],linestyle='dashed',marker = 'o')
-    plt.xlabel("sample")
-    plt.ylabel("y value")
-    plt.title(f" Predicted and true value of samples using Linear Regression")
-    plt.legend(["y_test", "y_pred"], loc="lower right")
-    plt.show()
-
-
-
-
-
-def x_y_unwanted_remover(sensor2,sensor3,sensor4,y):
-
-    import numpy as np
-    
-    index_remove_list =[]
-    for i in range(0,len(y)):
-        if y[i] =='clean' or y[i] =='all defect modes':
-            index_remove_list.append(i)
-    index_remove_list.reverse()
-
-    for i in index_remove_list:
-        del sensor2[i]
-        del sensor3[i]
-        del sensor4[i]
-        y =  y.drop([i])
-    
-    y = np.array(y)
-    return sensor2,sensor3,sensor4,y'''
