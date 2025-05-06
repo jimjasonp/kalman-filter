@@ -12,11 +12,9 @@ CONTENTS
 
 5)PLOTS
 
-6)KERNELS
+6)EXPERIMENT RUN
 
-7)EXPERIMENT RUN
-
-8)TOOLS FOR TUNING
+7)TOOLS FOR TUNING
 '''
 
 
@@ -35,22 +33,23 @@ CONTENTS
 1) X AND Y SET CREATORS
 
 ---> x set creator (X_set)
+Takes as input the path and a transformation. The outputs are five:the first is the concatenated amplitude of all three sensors
+the second,third and fourth are the amplitudes of the second,third and fourth sensor, the fifth is the frequency 
 
-to x set pairnei san input path kai to eidos tou transformation
-bgazei 5 outputs
-to prwto output einai to concatenated amplitude ten shmatwn kai twv triwn sensors
-to deutero trito kai tetarto output einai to amplitude tou shmatos tou kathe sensor
-to pempto output einai h suxnothta 
 
 ---> y set creator (classification and regression) (y_set)
+Takes as input the path. The output is a dataframe containing columns with elements of each sample. These elements are: damage percentage as 'dmg',
+the filename as 'damage_file_name', the case study as 'caseStudey', the kind of defect as 'defect' and the index number as 'dmg_index_number'
 
-to y_set pairnei san input to path kai bgazei san output to dataframe me ola ta stoixeia gia 
-thn astoxia to column 'defect' exei to eidos tou defecr kai to column 'dmg' exei to damage percentage
 
 '''
 
 def X_set(path,transformation):
 
+    '''
+    transformations are : 'none','fourier','psd','pwelch','spectrogram','wavelet'
+    
+    '''
     import os
     import glob
     import numpy as np
@@ -134,6 +133,10 @@ def X_set(path,transformation):
 
 def y_set(path):
     
+    '''
+    select column ['dmg'] which is the damage percentage for regression or ['defect'] which is the defect for classification
+    
+    '''
     import numpy as np
     import pandas as pd
     import os
@@ -232,24 +235,24 @@ To input einai to path kai to output einai ta concatenated normalized shmata olw
 
 
 def fourier_signal_normalization(sample):
+
+    '''
+    the input is a signal and the outputs are the amplitude and the frequency of the normalized fft
+    
+    '''
     import numpy as np
     
-
-    ########## pairnei san input sample apo raw shma
-    ####### dinei output to amp kai to freq tou kanonikopoihmenou shmatos
     amp= fourier(sample)[0]
     freq= fourier(sample)[1]
 
     amp_list =[]
     freq_list =[]
     bound = int(0.5*len(amp))
-    #max_amp = max(amp)
     max_amp = -max(amp)
     max_freq = abs(freq[amp.argmax()])
 
     for i in range(0,bound):
         amp_list.append(amp[i]/max_amp)
-        #amp_list.append(1/(amp[i]/max_amp))
         freq_list.append(freq[i]/max_freq)
 
     amp = np.array(amp_list)
@@ -258,8 +261,9 @@ def fourier_signal_normalization(sample):
 
 
 def fourier_vector_maker(data):
-    ########## pairnei san input data
-    ####### dinei output vector kanonikopoihmeno sample me freq
+
+    '''The input it the concatenated signal and the outputs are two vectors, the 
+    concatenated normalized amplitude and the normalized frequency'''
     feature_vector=[]
     freq_vector =[]
     for sample in data:
@@ -269,11 +273,11 @@ def fourier_vector_maker(data):
 
 
 def fourier_nrm_vector(path):
-
-    import numpy as np
+    '''
+    The input is the data path and the output is the concatenated normalized fft for every sensor and the normalized frequency
     
-    ########## pairnei san input path
-    ####### dinei output to nrm fourier shma
+    '''
+    import numpy as np
     from helper_functions import X_set
     X, s2,s3,s4,none_freqs = X_set(path,'none')
     vector = np.concatenate(( fourier_vector_maker(s2)[0],fourier_vector_maker(s3)[0],fourier_vector_maker(s4)[0],fourier_vector_maker(s4)[1]),axis=1)
@@ -356,43 +360,17 @@ def signal_props_extract(sample):
         if amp[i] == max(first_amp):
             first_max_amp = amp[i]
             first_max_freq = freq[i]
-            #####
-            first_max_i = i
-            #####
     
 
     for i in range(first_bound,second_bound):
         if amp[i] == max(second_amp):
             second_max_amp = amp[i]
             second_max_freq = freq[i]
-            #####
-            second_max_i = i
-            ######
 
-    #####
-    #for i in range(zero_bound,first_max_i):
-    #    if amp[i] < 0.1 * max(first_amp):
-    ##        first_width_first_bound = freq[i]
-    #for i in range(first_max_i,first_bound):
-    #    if amp[i] < 0.1 * max(first_amp):
-    #        first_width_second_bound = freq[i]
-
-    #for i in range(first_bound,second_max_i):
-    #    if amp[i] < 0.1 * max(second_amp):
-    #        second_width_first_bound = freq[i]
-    #for i in range(second_max_i,second_bound):
-    #    if amp[i] < 0.1 * max(second_amp):
-    #        second_width_second_bound = freq[i]
-
-    #big_width = first_width_second_bound-first_width_first_bound
-    #small_width = second_width_second_bound- second_width_first_bound
-    #####
 
     dx = second_max_freq-first_max_freq
     dy = first_max_amp-second_max_amp
-    logos_freq = second_max_freq/first_max_freq
-    logos_amp = first_max_amp/second_max_amp
-    props = first_max_amp,second_max_amp,dx,dy#,logos_freq,logos_amp#,big_width,small_width,first_max_freq,second_max_freq
+    props = first_max_amp,second_max_amp,dx,dy
     
     return props
 
@@ -532,10 +510,10 @@ def fourier_vector_maker_harmonics(data):
 
 def fourier_nrm_vector_harmonics(path):
 
-    import numpy as np
-    
     ########## pairnei san input path
     ####### dinei output to nrm fourier shma
+    
+    import numpy as np
     from helper_functions import X_set
     X, s2,s3,s4,none_freqs = X_set(path,'none')
     vector = np.concatenate(( fourier_vector_maker_harmonics(s2)[0],fourier_vector_maker_harmonics(s3)[0],fourier_vector_maker_harmonics(s4)[0],fourier_vector_maker_harmonics(s4)[1]),axis=1)
@@ -589,15 +567,11 @@ def fourier(sample_sensor):
     import numpy as np
     
     fs = 1/1000
-    #the sampling frequency is 1/(seconds in a total experiment time)
-
     fourier = np.fft.fft(sample_sensor)
-    #sample sensor is the value of s2 which is the 
     freqs = np.fft.fftfreq(sample_sensor.size,d=fs)
     power_spectrum = np.abs(fourier)
-    #
     power_spectrum = np.log(power_spectrum)
-    #
+    
     return power_spectrum,freqs
 
 
@@ -620,8 +594,6 @@ def psd(sample_sensor):
     from scipy import signal
 
     fs = 1000
-    # f contains the frequency components
-    # S is the PSD
     (f, S) = signal.periodogram(sample_sensor, fs, scaling='density')
     return S,f
     #plt.semilogy(f, S)
@@ -649,12 +621,11 @@ def wavelet(sample):
     import pywt
     import numpy as np
 
-    fs = 1000  # Sampling frequency
-    t = np.linspace(0, 1, fs, endpoint=False)  # Time vector
+    fs = 1000  
+    t = np.linspace(0, 1, fs, endpoint=False)
     signal = sample
 
-    # Perform wavelet transform
-    wavelet_name = 'db1' # Daubechies wavelet, order 1
+    wavelet_name = 'db1' 
     transformed_signal, _ = pywt.dwt(signal, wavelet_name)
     return transformed_signal
     # Plot the original signal
@@ -671,6 +642,8 @@ def wavelet(sample):
     #plt.show()
 
 def add_noiz(X_set,mean,stdev):
+
+
     import numpy as np
     X_set_new =[]
     for sample in X_set:
@@ -896,7 +869,6 @@ def all_damage_every_sensor_separate(path,index_list):
                     color=color, linestyle=linestyle, label=label)
             ax.grid(True)
             ax.legend(loc='upper right')
-            #ax.set_title(f'{sensor_name} - {label}')
 
         axs[-1].set_xlabel('Frequency (kHz)')
 
@@ -1180,7 +1152,6 @@ def classification_results_bar_charts(model_names, accuracies, std_devs, f1_scor
     plt.figure(figsize=(10, 6))
     bars = plt.bar(x, accuracies, capsize=5, color='skyblue', edgecolor='black')
 
-    # Annotate bars with accuracy ± std and f1 score
     for i, bar in enumerate(bars):
         height = bar.get_height()
         label = f'{accuracies[i]:.4f} ± {std_devs[i]:.4f}\n(F1: {f1_scores[i]:.4f})'
@@ -1210,30 +1181,7 @@ def classification_results_bar_charts(model_names, accuracies, std_devs, f1_scor
 
 '''
 
-6)KERNELS
-
-
-
-
-'''
-
-
-
-
-########################################################################
-
-########################################################################
-
-########################################################################
-
-########################################################################
-
-########################################################################
-
-
-'''
-
-7)EXPERIMENT RUN
+6)EXPERIMENT RUN
 
 ---> regression experiment run (regression_model_run)
 Pairnei san input to montelo to X_train to y_train to X_test kai y_test kai bgazei san output to 
@@ -1250,7 +1198,6 @@ def regression_model_run(model,X_train,y,X_test,y_true):
     from sklearn.metrics import mean_absolute_percentage_error,mean_absolute_error
 
     y_pred = model(X_train,y,X_test)
-    #print(y_pred)
     mape = 100*mean_absolute_percentage_error(y_true,y_pred)
     mae = mean_absolute_error(y_true,y_pred)
     return mae,mape,y_true,y_pred
@@ -1259,7 +1206,6 @@ def classification_model_run(model,X_train,y,X_test,y_true):
 
     from sklearn.metrics import accuracy_score
     y_pred = model(X_train,y,X_test)
-    #print(y_pred)
     acc = 100*accuracy_score(y_true,y_pred)
     acc = accuracy_score(y_true,y_pred)
     return acc,y_true,y_pred
@@ -1278,7 +1224,7 @@ def classification_model_run(model,X_train,y,X_test,y_true):
 
 '''
 
-8)TOOLS FOR TUNING
+7)TOOLS FOR TUNING
 
 ---> cross validation me leave one out(cross_val_loo)
 Pairnei san input to montelo to X kai to y kai kanei leave one out cross validation kai bgazei ta scores kathe fold.
@@ -1310,17 +1256,13 @@ def grid_search_loo(model,X_train,y_train):
     
     '''
     from sklearn.model_selection import GridSearchCV,LeaveOneOut
-    # defining parameter range 
     param_grid = {'C': [0.1, 1, 10, 100, 1000], 
                 'gamma': [1, 0.1, 0.01, 0.001, 0.0001], 
                 'kernel': ['rbf','sigmoid','poly']} 
 
     grid = GridSearchCV(model, param_grid, refit = True, cv=LeaveOneOut(),verbose = False) 
-
-    # fitting the model for grid search 
     grid.fit(X_train, y_train) 
 
-    # print best parameter after tuning 
     print(grid.best_params_)
     print(grid.best_score_)
 
