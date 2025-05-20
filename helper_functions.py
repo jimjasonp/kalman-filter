@@ -59,27 +59,27 @@ def X_set(path,transformation):
     sensor_data_list = []
     name_list = []
 
-    # gia kathe filename sto path pou tou exw dwsei afairei to .csv wste meta na mporei na diabasei ton arithmo
+    # remove .csv from filepath so that it reads the number
     for filename in sorted(glob.glob(os.path.join(path , "data*"))):
         filename = filename.removesuffix('.csv')
         name_list.append(filename)
 
-    #apo kathe filename krataei mono ton arithmo sto telos kai me auton ton arithmo ftiaxeni th nea sthlh index number
+    #index is the number of the filename
     sensor_data = pd.DataFrame({'name':name_list})
     sensor_data['sensor_index_number'] = [int(i.split('_')[-1]) for i in sensor_data['name']]
 
-    #kanw sort th lista basei tou index number
+    #list is sorted according to the index
     sensor_data = sensor_data.sort_values(by=['sensor_index_number'])
 
     suffix='.csv'
     new_names=[]
 
-    #se kathe filename sth lista pou exei ginei sort prosthetei to .csv wste na mporei na to diabasei
+    #adds .csv to every filename on the list
     for filename in sensor_data['name']:
         filename = filename+suffix
         new_names.append(filename)
 
-    #anoigei ta arxeia apo kathe path kai ftiaxnei th lista me tis metrhseis
+    #opens files and creates lists with data
 
     for filename in new_names:
         df = pd.read_csv(filename,sep=' |,', engine='python').dropna()
@@ -89,7 +89,6 @@ def X_set(path,transformation):
     power_spectrum_list = []
     sensor_names = ['s2','s3','s4']
     for sensor in sensor_names:
-        #gia kathe sample sensora dld gia kathe xronoseira (pou prokuptei apo to shma pou lambanei o sensoras efarmozo transformations
         for i in range(0,len(sensor_data_list)):
             sample_sensor =sensor_data_list[i][sensor]
             if transformation == 'fourier':
@@ -142,12 +141,10 @@ def y_set(path):
     import os
     import glob
 
-    #### paizei mono gia to balanced data###
     dmg_list = []
     name_list = []
     case_list = []
     defect_list =[]
-    # gia kathe file name sto path pou exw dwsei afairei to .csv kai afairei nan values kai kanei mia lista mono me to damage percentage
     for filename in glob.glob(os.path.join(path , "meta*")):
         df = pd.read_csv(filename,sep=' |,', engine='python')
         dmg_perc = df['Damage_percentage']
@@ -175,8 +172,7 @@ def y_set(path):
         
         name_list.append(filename)
         case_list.append(case)
-
-    # ftiaxnei ena dataframe me to damage percentage kai prosthetei to index number kai kanei sort basei autou 
+ 
     dmg_data = pd.DataFrame({'dmg':dmg_list,'damage_file_name':name_list,'caseStudey':case_list,'defect':defect_list})
     dmg_data['dmg_index_number'] = [int(i.split('_')[-1]) for i in dmg_data['damage_file_name']]
     dmg_data = dmg_data.sort_values(by=['dmg_index_number'])
@@ -213,22 +209,22 @@ def y_set(path):
 
 A) FOURIER SIGNAL NORMALIZATION
 
-ta tria parakatw functions leitourgoun mazi
-gia na parw to kanonikopoihmeno shma xrhsimopoiw to fourier nrm vector
-to opoio pairnei san input to path kai to output einai to kanonikopoihmeno shma
+
+the following functions work together
+to get the normalized fft use fourier_nrm_vector
+which takes as input the path and the output is the normalized fft
 
 ---> fourier signal normalization (fourier_signal_normalization)
-To input einai ena sample shmatos kai ypologizei to fft kai kanonikopoei ws pros th megisth syxnothta
-dhladh th syxnothta diegershs. To amplitude einai kanonikopoihmeno ws pros to amplitude sth megisth syxnothta kai 
-h suxnothta einai kanonikopoihmenh ws pros th syxnothta diegershs
+The input is a sample of signal, it calculates its fft and it then is normalized according to the excitation frequency
+The amplitude is normalized according to the amplitude of the excitation frequency and the frequency is normalized according to the excitation frequency
 
 ---> fourier vector maker (fourier_vector_maker)
-Pairnei san input data (mia lista h array apo shmata) kai efarmozei th sunarthsh fourier_signal_normalization kai dinei to kanonikopoihmeno shma
-to input einai ta data kai ta output einai mia lista me to kanonikopoihmeno amplitude kai mia lista me thn kanonikopoihmenh syxnothta
+The input is a list of signals and the function 'fourier_signal_normalization' is applied and calculates the normalized fft.
+The output is a list of normalized amplitudes and a list of normalized frequencies.
 
 ---> fourier nrm vector (fourier_nrm_vector)
-To input einai to path kai efarmozei thn sunarthsh fourier_vector_maker gia olous tous sensors kathe shmatos sto path.
-To input einai to path kai to output einai ta concatenated normalized shmata olwn twn samples sto path
+The input is the path of the file containing the data. The function 'fourier_vector_maker' is applied for every sensor of every signal in that path.
+The output is the concatenated normalized fft of every sensor of every signal and the normalized frequency. 
 
 '''
 
@@ -262,7 +258,7 @@ def fourier_signal_normalization(sample):
 
 def fourier_vector_maker(data):
 
-    '''The input it the concatenated signal and the outputs are two vectors, the 
+    '''The input is the concatenated signal and the outputs are two vectors, the 
     concatenated normalized amplitude and the normalized frequency'''
     feature_vector=[]
     freq_vector =[]
@@ -293,52 +289,58 @@ def fourier_nrm_vector(path):
 
 B) SIGNAL PROPERTIES EXTRACTION WITH NORMALIZATION
 
-ta parakatw functions leitourgoun mazi
-gia na parw to kanonikopoihmeno shma me ta props xrhsimopoiw to fourier_std_with_props_vector
-to opoio pairnei san input to path kai to output einai to kanonikopoihmeno shma me ta props
 
-gia na parw to raw shma me ta props xrhsimopoiw to signal_with_props_vector
-to opoio pairnei san input to path kai to output einai to raw shma me ta props
+The following functions work together
+To get the normalized fft with its properties use 'fourier_std_with_props_vector'
+The input is the path and the output is the normalized fft with its properties
+The properties are the excitation frequency and the reflection of the excitation frequency, their difference and the difference of their frequencies
 
-gia na parw ta props xrhsimopoiw to props_vector
-to opoio pairnei san input to path kai to output einai ta props
+To get the raw signal with the properties of the normalized fft use 'signal_with_props_vector' with transformation = 'none'
+The input is the path and the output is the signal with the properties
 
+To get only the properties use 'props_vector'
+The input is the path and the ouptu are the properties of the normalized fft
 
 ---> signal properties extraction (signal_props_extract)
-To input einai to sample tou kanonikopoihmenou shmatos kai to output einai kapoia properties tou shmatos.
-Ta properties poy ypologizei einai h diafora metaksy twn duo megalyterwn syxnothtwn kai h diafora metaksy twn duo megaluterwn amplitudes
+The input is a sample of normalized fft and the output is a tuple of the properties
 
 ---> signal properties extraction run (run_signal_extract)
-To input einai data (lista h array me shmata) kai prwta kanonikopoiei ta shmata kai meta trexei 
-gia kathe sample to signal_props_extract kai to output einai mia lista me ta properties tou kathe 
-kanonikopoihmenou shmatos
+The input is a list of signals that their fft is calculated and then are normalized after that 
+for every sample the function 'signal_props_extract' is applied. The output is a list of the properties.
 
 ---> raw signal with properties (signal_with_props_vector)
-To input einai to path kai to transformation pou thelw kai to output einai ena array me to shma kai ta properties tou kanonikopoihmenoy shmatos
-xrhsimopoei to function X_set gia na ftiaksei to shma kai na kanei to transformation pou tha dothei kai meta kanonikopoei to shma kai dinei ta properties tou
-To output einai ena concatenated array me to original h to transformed shma me th suxnothta kai ta properties tou kanonikopoihmenou shmatos 
+The input is the path and the transformation that will be applied on the signal the output is an array of the transformed signal and the
+properties of the normalized fft. It uses the function 'X_set' for the signal. The output is a concatenated array of the transformed signal and the properties
+of the normalized fft.
 
 ---> properties vector (props_vector)
-To input einai to path kai output einai ena array me ta properties tou kanonikopoihmenoy shmatos
-gia kathe sensora trexei run_signal_extract kai bgazei ta properties tou shmatos kathe sensor
-To output einai ena array me ta concatenated signal properties kath sensor
+The input is the path and the output is an array of the concatenated properties of the normalized signal for all sensors.
+For every sensor 'run_signal_extract' is applied and it calculates the properties of the signal for every sensor
 
 ---> normalized fourier signal with properties (fourier_nrm_with_props_vector)
-To input einai to path kai to output einai ena array me to kanonikopoihmeno shma kai ta properties tou kanonikopoihmenoy shmatos
-xrhsimopoei to function X_set gia na ftiaksei to shma kai meta kanonikopoei to shma kai dinei ta properties tou
-To output einai ena concatenated array me to kanonikopoihmeno shma kai me thn kanonikopoihmenh suxnothta kai ta properties tou kanonikopoihmenou shmatos
+The input is the path and the output is an array of the normalized fft and its properties
+It uses the function 'X_set' for the signla which is then transformed with fft and normalized and then its properties are calculated
+The output is a concatenated array of the normalized amplitude and frequency of the fft and its properties.
 
 '''
 
 def signal_props_extract(sample):
-    ########## pairnei san input sample apo fourier shma
-    ####### dinei output ta signal props tou shmatos
+
+
+    '''  
+
+    The input is a fft sample and the output is a tuple of its properties
+    The bounds change depending on the material and the excitation frequency
+    The default bounds are
+    for the fft : freq = 0 , freq = 200 kai freq = 400 Khz
+    for the normalized fft :freq = 0 , 1.3<=freq<=1.5  kai 2.9<=freq<=3.2 
+    
+    '''
+
     freq = sample[1]
     amp = sample[0]
     
-    #### auta ta bounds allazoun analoga me ta shmeia poy emfanizetai to megisto amp
-    ### gia kanoniko shma ta oria einai freq = 0 , freq = 200 kai freq = 400 Khz
-    ### gia normalized shma einia freq = 0 , 1.3<=freq<=1.5  kai 2.9<=freq<=3.2 
+    
     for i in range(0,len(freq)):
 
         if freq[i] >= 1.3 and freq[i] <= 1.5:
@@ -375,8 +377,11 @@ def signal_props_extract(sample):
     return props
 
 def run_signal_extract(data):
-    ########## pairnei san input raw shma
-    ####### dinei output ta signal properties tou shmatos
+
+    '''
+    The input is a list of fft samples and the output is a list of every samples' properties 
+    
+    '''
     feature_vector=[]
     for sample in data:
         sample = fourier_signal_normalization(sample)
@@ -385,10 +390,13 @@ def run_signal_extract(data):
 
 def signal_with_props_vector(path,transformation):
     
+
+    '''
+    The input is the path and the output is the transformed signal with the properties of the normalized fft
+
+    '''
+
     import numpy as np
-    
-    ########## pairnei san input path
-    ####### dinei output ta signal properties tou shmatos me to shma me ton metasxhmatismo
     from helper_functions import X_set
     X, s2,s3,s4,freqs = X_set(path,transformation)
     vector = np.concatenate((s2,s3,s4,freqs),axis=1)
@@ -400,11 +408,11 @@ def signal_with_props_vector(path,transformation):
 
 def props_vector(path):
 
+    '''
+    The input is the path and the output is a tuple of the normalized fft properties
+
+    '''
     import numpy as np
-    
-    
-    ########## pairnei san input path
-    ####### dinei output ta signal properties tou shmatos
     from helper_functions import X_set
     X, s2,s3,s4,none_freqs = X_set(path,'none')
     vector = np.concatenate(( run_signal_extract(s2),run_signal_extract(s3),run_signal_extract(s4)),axis=1)
@@ -412,10 +420,11 @@ def props_vector(path):
 
 def fourier_nrm_with_props_vector(path):
 
-    import numpy as np
+    '''
+    The input is the path and the output is the normalized fft and its properties
     
-    ########## pairnei san input path
-    ####### dinei output ta signal properties tou shmatos me to shma me to kanonikopoihmeno fourier
+    '''
+    import numpy as np
     from helper_functions import X_set
     vector = fourier_nrm_vector(path)
     X, s2,s3,s4,none_freqs = X_set(path,'none')
@@ -430,34 +439,34 @@ def fourier_nrm_with_props_vector(path):
 
 C) HARMONICS WITH NORMALIZATION 
 
+The following functions work together
+To get the harmonics of the normalized fft use 'fourier_nrm_vector_harmonics'
+That takes as input the path and the output is an array of the harmonics of every sample in that path
 
 ---> fourier harmonics (fourier_harmonics)
 takes as input a signal sample and applies the fft transformation. The output is the amplitude and the frequency of the dominant harmonic.
 
-
-ta tria parakatw functions leitourgoun mazi
-gia na parw tis armonikes apo to kanonikopoihmeno shma xrhsimopoiw to fourier nrm vector
-to opoio pairnei san input to path kai to output einai oi armonikes tou kanonikopoihmenou shmatos
-
 ---> harmonics from fourier signal normalization (fourier_signal_normalization_harmonics)
-To input einai ena sample shmatos kai ypologizei to fft kai kanonikopoei ws pros th megisth syxnothta
-dhladh th syxnothta diegershs. Apo auto to shma krataei mono tis ta samples me arithmo sample apo 150 ews 200
-giati mesa se auto to diasthma exw tis dominant armonikes. To amplitude einai kanonikopoihmeno ws pros to amplitude sth megisth syxnothta kai 
-h suxnothta einai kanonikopoihmenh ws pros th syxnothta diegershs
+The input is a signal in which fft is applied and it is then normalized. Then the samples that contain the dominant harmonic are kept
+and the rest is removed (These samples are 150 - 200). The output is a tuple of the normalized amplitude and frequency of the dominant harmonic. 
 
 ---> fourier harmonics vector maker (fourier_vector_maker_harmonics)
-Pairnei san input data (mia lista h array apo shmata) kai efarmozei th sunarthsh fourier_signal_normalization_harmonics kai dinei tis armonikes apo
-to kanonikopoihmeno shma to input einai ta data kai ta output einai mia lista me to kanonikopoihmeno amplitude twn armonikwn kai mia lista me thn kanonikopoihmenh 
-syxnothta twn armonikwn
+The input is an array of signal and for every signal the function 'fourier_signal_normalization_harmonics' is applied and the output is a list 
+of normalized amplitudes and frequencies of the harmonic of every signal.
 
 ---> harmonics fourier nrm vector (fourier_nrm_vector_harmonics)
-To input einai to path kai efarmozei thn sunarthsh fourier_vector_maker gia olous tous sensors kathe shmatos sto path.
-To input einai to path kai to output einai oi concatenated normalized armonikes olwn twn samples sto path
+The input is the path and for every sample the function 'fourier_vector_maker_harmonics' is applied and the output is the concatenated array
+of normalized amplitudes and frequencies of the harmonic of every sample in that path.
 
 '''
 
 def fourier_harmonics(sample):
     
+    '''
+    The input is the signal
+    The output is the amplitude and the frequency of the dominant harmonic
+    The dominant harmonic occurs between samples 170 and 250
+    '''
     import numpy as np
 
     amp= fourier(sample)[0]
@@ -475,11 +484,14 @@ def fourier_harmonics(sample):
 
 
 def fourier_signal_normalization_harmonics(sample):
+    
+    '''
+    The input is a signal
+    The output is the amplitude and the frequency of the normalized fft of the dominant harmonic
+    '''
+    
     import numpy as np
     
-
-    ########## pairnei san input sample apo raw shma
-    ####### dinei output to amp kai to freq tou kanonikopoihmenou shmatos
     amp= fourier(sample)[0]
     freq= fourier(sample)[1]
 
@@ -498,8 +510,12 @@ def fourier_signal_normalization_harmonics(sample):
 
 
 def fourier_vector_maker_harmonics(data):
-    ########## pairnei san input data
-    ####### dinei output vector kanonikopoihmeno sample me freq
+
+    '''
+    The input is a list of signals
+    The outputs are a list of the normalized amplitudes and a list of the normalized frequencies of the dominant harmonics
+    
+    '''
     feature_vector=[]
     freq_vector =[]
     for sample in data:
@@ -510,8 +526,10 @@ def fourier_vector_maker_harmonics(data):
 
 def fourier_nrm_vector_harmonics(path):
 
-    ########## pairnei san input path
-    ####### dinei output to nrm fourier shma
+    '''
+    The input is the path
+    The output is a concatenated array of normalized amplitudes and frequencies of the harmonic of every sample in that path
+    '''
     
     import numpy as np
     from helper_functions import X_set
@@ -538,34 +556,31 @@ def fourier_nrm_vector_harmonics(path):
 3) DATA TRANSFORMATIONS
 
 ---> fast fourier transform (fourier)
-pairnei san input ena shma kai ypologizei to fft tou shmatos
-dinei san output to amplitude tou shmatos kai th suxnothta
+
+The input is a signal and the output is the amplitude and the frequency of the fft of the signal
 
 ---> pwelch (pwelch)
-pairnei san input ena shma kai ypologizei to pwelch tou shmatos
-dinei san output to amplitude tou shmatos kai th suxnothta
+The input is a signal and the output is the amplitude and the frequency of the pwelch of the signal
 
 ---> psd (psd)
-pairnei san input ena shma kai ypologizei to psd tou shmatos
-dinei san output to amplitude tou shmatos kai th suxnothta
+The input is a signal and the output is the amplitude and the frequency of the psd of the signal
 
 ---> spectrogram (spectrogram)
-pairnei san input ena shma kai ypologizei to spectrogram tou shmatos
-dinei san output to spectrogram tou shmatos
+The input is a signal and the output is the spectrogram signal
 
 ---> wavelet (wavelet)
-pairnei san input ena shma kai ypologizei to wavelet tou shmatos
-dinei san output to wavelet
+The input is a signal and the output is the db1 wavelet of the signal
 
 ---> noise adder (add_noiz)
-pairnei san input ena X_set kai prosthetei noise
-dinei san output to X_set opou exei prostethei o thorubos
+The input is the output of the 'X_set' function and the output is the output of X_set with noise added
 '''
 
 def fourier(sample_sensor):
-
+    '''
+    The input is a signal 
+    The output is the amplitude and the frequency of the fft of the signal
+    '''
     import numpy as np
-    
     fs = 1/1000
     fourier = np.fft.fft(sample_sensor)
     freqs = np.fft.fftfreq(sample_sensor.size,d=fs)
@@ -577,9 +592,12 @@ def fourier(sample_sensor):
 
 def pwelch(sample_sensor):
 
+    '''
+    The input is a signal 
+    The output is the amplitude and the frequency of the pwelch of the signal
+    '''
+
     from scipy import signal
-
-
     fs = 1000
     (f, S)= signal.welch(sample_sensor, fs, nperseg=1024)
     return S,f
@@ -591,8 +609,12 @@ def pwelch(sample_sensor):
 
 def psd(sample_sensor):
 
-    from scipy import signal
+    '''
+    The input is a signal 
+    The output is the amplitude and the frequency of the psd of the signal
+    '''
 
+    from scipy import signal
     fs = 1000
     (f, S) = signal.periodogram(sample_sensor, fs, scaling='density')
     return S,f
@@ -605,8 +627,12 @@ def psd(sample_sensor):
 
 def spectrogram(sample):
 
-    from scipy import signal
+    '''
+    The input is a signal 
+    The output is the spectrogram of the signal
+    '''
 
+    from scipy import signal
 
     fs = 1000
     f, t, Sxx = signal.spectrogram(sample, fs)
@@ -617,7 +643,10 @@ def spectrogram(sample):
     return Sxx
 
 def wavelet(sample):
-
+    '''
+    The input is a signal 
+    The output is the db1 wavelet of the signal
+    '''
     import pywt
     import numpy as np
 
@@ -643,6 +672,10 @@ def wavelet(sample):
 
 def add_noiz(X_set,mean,stdev):
 
+    '''
+    The input is the output of the 'X_set' function 
+    The output is the output of X_set with noise added
+    '''
 
     import numpy as np
     X_set_new =[]
@@ -668,52 +701,28 @@ def add_noiz(X_set,mean,stdev):
 '''
 4) FEATURE ENGINEERING TECHNIQUES
 
----> random forest feature elimination with cross validation (rfecv)
-pairnei san input to X_train to y_train kai to X_test kai kanei rfecv gia na brei ta kalutera features
-to output einai to X_train kai to X_test me ta kalutera features 
-
 ---> prinicipal component analysis (pca)
-pairnei san input to X_train kai to X_test kai kanei pca gia na krathsei tous grammikous sunduasmous me to megalutero variance
-to output einai to X_train me to X_test me ta principal components me to megalutero variance
+The input is the X_train and X_test and this function performs pca. PCA finds linear combinations with the largest variance and creates principal 
+components with these combinations. The results are the X_train and X_test that instead of the original data they contain the principal components.
 
 ---> kernel principal component analysis (kpca)
-pairnei san input to X_train kai to X_test kai ton kernel kai prwta xrhsimopoiei enan kernel gia na kanei map ta features se ena allo feature space kai meta
-kanei pca gia na krathsei ta features me to megalutero variance
-to output einai to X_train me to X_test me ta features me tous sunduasmous me to megalutero variance
-
+The input is the X_train and X_test and this function performs kernel pca. First the data are projected in a feature space according to the choice of the kernel. 
+Then PCA finds linear combinations with the largest variance and creates principal components with these combinations. The results are the X_train and X_test that 
+instead of the original data they contain the principal components from the feature space they were projected.
 
 ---> data mixer (data_mixer)
-pairnei san input ta X kai Y enos dataset kai ta X kai Y enos deuterou dataset kai to pososto summetoxhs kathe dataset.
-Enwnei ta duo datasets basei twn antistoixwn posostwwn summetoxhs kai kanei shuffle ta dedomena to output einai to enwmeno dataset.
+The input is the X and Y data of one dataset and those of another dataset and the percentage that is kept from each dataset
+Then the percentages of each dataset are combined and shuffled
+The output is the shuffled combination of the two datasets.
 '''
 
 
-
-def rfecv(X_train,y,X_test):
-
-    
-    import pandas as pd
-
-    from sklearn.feature_selection import RFE
-    from sklearn.tree import DecisionTreeRegressor
-    from sklearn.tree import DecisionTreeClassifier
-    rfe = RFE(estimator=DecisionTreeClassifier(), n_features_to_select = 3 )
-    rfe.fit(X_train,y)
-    feature_list=[]
-    for i,col in zip(range(X_train.shape[1]), X_train.columns):
-        if rfe.ranking_[i]<2:
-            feature_list.append(col)
-    X_train_new = pd.DataFrame()
-    X_test_new = pd.DataFrame()
-    for i in range(0,len(feature_list)):
-            X_train_new[f'feature{i}'] = X_train[feature_list[i]]
-            X_test_new[f'feature{i}'] = X_test[feature_list[i]]
-    X_test = X_test_new
-    X_train = X_train_new
-    return X_train,X_test
-
 def pca(X_train,X_test):
 
+    '''
+    The input is the original X_train and X_test
+    The output is the X_train and X_test that contain the principal components of the original data
+    '''
     import numpy as np
     import pandas as pd
     from sklearn.decomposition import PCA
@@ -735,6 +744,19 @@ def pca(X_train,X_test):
 
 def kpca(X_train,X_test,input_kernel):
 
+
+    '''
+    The input is the original X_train and X_test and the kernel
+    The output is the X_train and X_test that contain the principal components of the original data that are projected to a feature space 
+    The feature space depends on the chosen kernel
+
+    The kernels are :
+    Periodic
+    Locally periodic
+    RBF
+    Rational quadratic
+    Rational locally periodic
+    '''
     import numpy as np
     import pandas as pd
     from sklearn.decomposition import KernelPCA   
@@ -765,6 +787,12 @@ def kpca(X_train,X_test,input_kernel):
     return X_train,X_test
 
 def data_mixer(X_1,y_1,X_2,y_2,first_percentage,second_percentage):
+    '''
+    
+    The input is the X and Y data of two datasets each dataset's percentage that is kept
+    The output is the shuffled combination of the two datasets.
+    
+    '''
     from sklearn.model_selection import train_test_split
     import numpy as np
     if first_percentage == 1:
@@ -831,7 +859,7 @@ bgazei to parity plot tou y_test me to y_pred kai eite to kanei save eite to dei
 
 
 ---> confusion matrix gia to classification task (confusion_matrix_display)
-pairnei san input ta y_true,y_pred,model,mode,accuracy kai bgazei to confusion matrix me titlo
+pairnei san input ta y_test,y_pred,model,mode,accuracy kai bgazei to confusion matrix me titlo
 to onoma tou montelou kai to accuracy tou. To montelo prepei na einai function kai to mode einai 
 eite show eite save.
 
@@ -846,6 +874,14 @@ the inputs are the model names, the mape values, the standard deviation values, 
 
 
 def all_damage_every_sensor_separate(path,index_list):
+    
+    '''
+    takes as input the data path and a list that contains tuples which contain the indexes of each sample, the damage 
+    percentage values or defects, the color of the line, and the linestyle
+    The output are three figures, one for every sensor,
+    each figure contains subplots of all damage scenarios of the given samples.
+    '''
+    
     import matplotlib.pyplot as plt
     import numpy as np
     from helper_functions import fourier, X_set
@@ -879,6 +915,14 @@ def all_damage_every_sensor_separate(path,index_list):
 
 
 def all_damage_every_sensor_together(path,index_list):
+    
+    '''
+    The input is the data path and a list that contains tuples which contain the indexes of each sample, the damage 
+    percentage values or defects, the color of the line, and the linestyle.
+    The outputs are three figures, one for every sensor,
+    each figure contains plots of all damage scenarios of the given samples.
+    '''
+
     import matplotlib.pyplot as plt
     import numpy as np
     from helper_functions import fourier, X_set
@@ -910,6 +954,12 @@ def all_damage_every_sensor_together(path,index_list):
         plt.show()
 
 def all_sensor_time_plot_separate(path,index):
+
+    '''
+    The input is the data path and the index of the sample that is plotted. 
+    The outputs are three subplots of the time signal of every sensor for the sample of that index.
+    '''
+    
     import matplotlib.pyplot as plt
 
     __,s2,s3,s4,__ = X_set(path,'none')
@@ -942,6 +992,12 @@ def all_sensor_time_plot_separate(path,index):
 
 
 def all_sensor_fft_plot_separate(path,index):
+
+
+    '''
+    The input is the data path and the index of the sample that is plotted.
+    The outputs are three subplots of the fft of every sensor for the sample of that index
+    '''
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -975,13 +1031,16 @@ def all_sensor_fft_plot_separate(path,index):
 
 
 def single_sensor_fft_plot(path,index,defect):
+    
+    '''
+    The input is the data path, the index of the sample that is plotted and the name of the defect 
+    The output is a plot of the fft of sensor 3. 
+    Two arrows show the excitation frequency and the dominant harmonic frequency.
+    
+    '''
     import matplotlib.pyplot as plt
     import numpy as np
 
-    '''
-    gia na fainetai omorfo bale path = 'random_data' kai index 10 
-    
-    '''
     __,s2,s3,s4,__ = X_set(path,'none')
 
     s2 = fourier(s2[index])
@@ -1005,7 +1064,10 @@ def single_sensor_fft_plot(path,index,defect):
 def every_defect_mode_harmonics_plot(path,dd_index,df_index,all_index,dm_index):
 
     '''
-    gia na bgei vraiao ...
+    The input is the data path and the sample indexes for every kind of defect(dd,df,dm,all) 
+    The outputs are 4 subplots of the harmonics of every defect mode for one sensor
+
+    to see all defects:
     path = 'Balanced_data'
 
     dd --> 0
@@ -1052,18 +1114,21 @@ def every_defect_mode_harmonics_plot(path,dd_index,df_index,all_index,dm_index):
 
 
 
-def parity_plot(y_true,y_pred,model,mode):
+def parity_plot(y_test,y_pred,model,mode):
     
     
     '''
-    prepei to model na einai ws function
-    
+    The inputs are y_test, y_pred the model and the mode 
+    In 'save' mode the plot is saved and in 'show' mode the plot is shown
+    The output is the parity plot of y_test and y_pred 
+
+    the model has to be a function
 
     '''
 
     import matplotlib.pyplot as plt
 
-    plt.scatter(y_true,y_pred,color='r')
+    plt.scatter(y_test,y_pred,color='r')
     xpoints = ypoints = plt.xlim()
     plt.plot(xpoints, ypoints)
     plt.xlabel('Test Values')
@@ -1082,7 +1147,16 @@ def parity_plot(y_true,y_pred,model,mode):
         plt.show()
 
 
-def confusion_matrix_display(y_true,y_pred,model,mode,accuracy):
+def confusion_matrix_display(y_test,y_pred,model,mode,accuracy):
+    
+    '''
+    The inputs are y_test,y_pred,model,mode, the accuracy of the predictions 
+    In 'save' mode the plot is saved and in 'show' mode the plot is shown
+    The output is the confusion matrix and its title says the model's name and accuracy
+    
+    The model has to be a function
+    '''
+    
     import matplotlib.pyplot as plt
     from sklearn.metrics import confusion_matrix,ConfusionMatrixDisplay
 
@@ -1091,7 +1165,7 @@ def confusion_matrix_display(y_true,y_pred,model,mode,accuracy):
     if model.__name__ =='random_forest_clf' : name = 'Random Forest'
     if model.__name__ =='xgb_clf' : name = 'XGB'
     if model.__name__ =='cnn_class' : name = 'CNN'
-    cm = confusion_matrix(y_true,y_pred)
+    cm = confusion_matrix(y_test,y_pred)
     disp = ConfusionMatrixDisplay(cm)
     disp.plot()
     plt.title(f'Confusion matrix of {name} with accuracy = {accuracy}')
@@ -1104,6 +1178,15 @@ def confusion_matrix_display(y_true,y_pred,model,mode,accuracy):
 
 
 def regression_results_bar_charts(model_names, mape, std_devs, pvals,ylabel):
+    
+
+    '''
+    The inputs are the model names, the mape values, the standard deviation values, 
+    the p-value values as lists and the label on y axis.
+    The output is a figure that contains bar charts that compare each models 
+    mape, standard deviation and p-value
+    '''
+    
     
     import matplotlib.pyplot as plt
     import numpy as np
@@ -1136,6 +1219,11 @@ def regression_results_bar_charts(model_names, mape, std_devs, pvals,ylabel):
 
 def classification_results_bar_charts(model_names, accuracies, std_devs, f1_scores,ylabel):
     
+    '''
+    
+    The inputs are the model names, the accuracy values, the standard deviation values, the f1 scores as lists and the label on y axis.
+    The output is a figure with bar charts that compare each model's accuracy standard deviation and f1 score
+    '''
     
     import matplotlib.pyplot as plt
     import numpy as np
@@ -1184,31 +1272,40 @@ def classification_results_bar_charts(model_names, accuracies, std_devs, f1_scor
 6)EXPERIMENT RUN
 
 ---> regression experiment run (regression_model_run)
-Pairnei san input to montelo to X_train to y_train to X_test kai y_test kai bgazei san output to 
-mae,mape,y_test kai y_pred. To montelo prepei na einai function
+The input is the model as a function the X_train, y_train, X_test, y_test. That model is trained and tested and mae and mape are calculated.
+The outputs are mae,mape,y_test and y_pred 
 
 ---> classification experiment run(classification_model_run)
-Pairnei san input to montelo to X_train to y_train to X_test kai y_test kai bgazei san output to 
-accuracy,y_test kai y_pred. To montelo prepei na einai function
+The input is the model as a function the X_train, y_train, X_test, y_test. That model is trained and tested and its accuracy is calculated.
+The outputs are accuracy,y_test kai y_pred
 '''
 
 
-def regression_model_run(model,X_train,y,X_test,y_true):
+def regression_model_run(model,X_train,y,X_test,y_test):
     
+    '''
+    The input is the model as a function the X_train, y_train, X_test, y_test.
+    The outputs are mae,mape,y_test and y_pred of that model
+    '''
     from sklearn.metrics import mean_absolute_percentage_error,mean_absolute_error
 
     y_pred = model(X_train,y,X_test)
-    mape = 100*mean_absolute_percentage_error(y_true,y_pred)
-    mae = mean_absolute_error(y_true,y_pred)
-    return mae,mape,y_true,y_pred
+    mape = 100*mean_absolute_percentage_error(y_test,y_pred)
+    mae = mean_absolute_error(y_test,y_pred)
+    return mae,mape,y_test,y_pred
 
-def classification_model_run(model,X_train,y,X_test,y_true):
+def classification_model_run(model,X_train,y,X_test,y_test):
+
+    '''
+    The input is the model as a function the X_train, y_train, X_test, y_test.
+    The outputs are accuracy,y_test and y_pred of that model
+    '''
 
     from sklearn.metrics import accuracy_score
     y_pred = model(X_train,y,X_test)
-    acc = 100*accuracy_score(y_true,y_pred)
-    acc = accuracy_score(y_true,y_pred)
-    return acc,y_true,y_pred
+    acc = 100*accuracy_score(y_test,y_pred)
+    acc = accuracy_score(y_test,y_pred)
+    return acc,y_test,y_pred
 
 ########################################################################
 
@@ -1227,18 +1324,24 @@ def classification_model_run(model,X_train,y,X_test,y_true):
 7)TOOLS FOR TUNING
 
 ---> cross validation me leave one out(cross_val_loo)
-Pairnei san input to montelo to X kai to y kai kanei leave one out cross validation kai bgazei ta scores kathe fold.
-Sto regression to scoring einai  'neg_mean_absolute_percentage_error' kai sto classification einai 'accuracy'
+
+The input is the model, the X and y data. This function performs leave one out cross validation and calculates the scores
+for every fold. For regression the scoring is 'neg_mean_absolute_percentage_error'  and for classification the scoring is 'accuracy'
+The output is the score of each fold
 
 
 ---> grid search me leave one out(grid_search_loo)
-Pairnei san input to montelo to X_train kai to y_train kai kanei grid search me leave one out gia na brei tis kaluteres 
-parametrous tou montelou. Sto telos kanei print tis kaluteres parametrous.
-Analoga to montelo prepei na ruthmistoun oi parametroi pou tha ginei to grid search.
+The input is the model the X_train and y_train. This function performs grid search with leave one out to find the best parameters for the model according to a scoring.
+Depending on the model the parameters defer.
+The outputs are the parameters with which the model achieved its best performance
 '''
 
 def cross_val_loo(model,X,y):
     '''
+    The input is the model, the X and y data.
+    The output is the score of each fold after cross validation with leave one out
+    
+    
     regression --> scoring = 'neg_mean_absolute_percentage_error'
     classification ---> scoring = 'accuracy'
     '''
@@ -1252,7 +1355,10 @@ def cross_val_loo(model,X,y):
 
 def grid_search_loo(model,X_train,y_train):
     '''
-    ftiaxnw tis parametrous gia to modelo pou tha dwsw sto input
+    The input is the model the X_train and y_train
+    The outputs are the parameters with which the model achieved its best performance after leave one out grid search
+
+    Each model has different parameters, the default parameters are the parameters of an SVM algorithm
     
     '''
     from sklearn.model_selection import GridSearchCV,LeaveOneOut
