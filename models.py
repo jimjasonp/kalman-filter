@@ -352,3 +352,107 @@ def keras_mlp_classifier(input_shape):
                   loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                   metrics=['accuracy'])
     return model
+
+def keras_cnn_regressor(input_shape):
+
+    import tensorflow as tf
+    from tensorflow import keras
+    from keras import layers  
+    from keras.models import Sequential
+    import numpy as np
+
+    #X_train = np.expand_dims(X_train, axis=-1)
+    #X_test = np.expand_dims(X_test, axis=-1)
+
+    model = Sequential([
+    #layers.Rescaling(1./255),
+    layers.Conv1D(16,3, padding = 'same', activation='relu'),
+    layers.MaxPooling1D(),
+    layers.Conv1D(32,3,padding='same',activation='relu'),
+    layers.MaxPooling1D(),
+    layers.Conv1D(64,3,padding='same',activation='relu'),
+    layers.MaxPooling1D(),
+    layers.Flatten(),
+    layers.Dropout(0.2),
+    layers.Dense(1)
+    ])
+    model.compile(optimizer='adam',loss="mean_absolute_error")
+    return model
+
+
+def keras_cnn_classifier(input_shape):
+
+    import tensorflow as tf
+    from tensorflow import keras
+    from keras import layers  
+    from keras.models import Sequential
+    import numpy as np
+
+    #X_train = np.expand_dims(X_train, axis=-1)
+    #X_test = np.expand_dims(X_test, axis=-1)
+
+
+    model = Sequential([
+    #layers.Rescaling(1./255),
+    layers.Conv1D(16,3, padding = 'same', activation='relu'),
+    layers.MaxPooling1D(),
+    layers.Conv1D(32,3,padding='same',activation='relu'),
+    layers.MaxPooling1D(),
+    layers.Conv1D(64,3,padding='same',activation='relu'),
+    layers.MaxPooling1D(),
+    layers.Flatten(),
+    layers.Dropout(0.2),
+    layers.Dense(4)
+    ])
+    model.compile(loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits = True),metrics = ['accuracy'])
+    return model
+
+def keras_lstm_regressor(input_shape):
+
+    import numpy as np
+    import pandas as pd
+    import tensorflow as tf
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import LSTM, Dense, Dropout
+
+
+    #X_train = np.expand_dims(X_train, axis=1)
+    #X_test = np.expand_dims(X_test, axis=1)
+
+
+    model = Sequential([
+        LSTM(100, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2])),
+        Dropout(0.3),
+        LSTM(50),
+        Dropout(0.3),
+        Dense(50, activation="relu"),
+        Dense(1)])
+
+    model.compile(loss='mean_squared_error',optimizer='adam',metrics=['mae'])
+    return model
+
+def keras_lstm_classifier(input_shape):
+
+    import numpy as np
+    import pandas as pd
+    import tensorflow as tf
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import LSTM, Dense, Dropout
+
+
+    #X_train = np.expand_dims(X_train, axis=1)
+    #X_test = np.expand_dims(X_test, axis=1)
+
+    model = Sequential([
+        LSTM(100, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2])),
+        Dropout(0.3),
+        LSTM(50),
+        Dropout(0.3),
+        Dense(50, activation="relu"),
+        Dense(4, activation="softmax")])
+
+    model.compile(
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
+        metrics=['accuracy'])
+
+    return model
