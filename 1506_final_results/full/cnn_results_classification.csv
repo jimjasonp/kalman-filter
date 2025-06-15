@@ -1,0 +1,3 @@
+transformation,model,mean_acc,std_acc,f1_macro
+none,KerasClassifier,0.715,0.10439809011105788,0.6955540333849158
+fourier,KerasClassifier,0.7626315789473683,0.11230893285439038,0.7548300310800311
