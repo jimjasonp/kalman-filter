@@ -14,22 +14,21 @@ import pandas as pd
 import numpy as np
 from joblib import Parallel, delayed
 
-n_points = 750
+# Parameters
+n_points_list = [375, 460, 750]
 transformation_list = ['none', 'fourier']
 noise_levels = [2, 5, 10]
 
-
+# Paths
 balanced = r'C:\Users\jimja\Desktop\thesis\all_datasets\Balanced_Data'
 test = r'C:\Users\jimja\Desktop\thesis\all_datasets\test_classification'
 random = r'C:\Users\jimja\Desktop\thesis\all_datasets\random_data'
 
 
-# Helper for p-value computation
 def p_val(y_true, y_pred):
     return pearsonr(y_true, y_pred)[1]
 
 
-# --- Regression Helper ---
 def run_regression_fold(model_fn, X, X_dl, y, train_idx, test_idx, is_dl):
     model = model_fn()
     X_train = X_dl[train_idx] if is_dl else X[train_idx]
@@ -41,7 +40,6 @@ def run_regression_fold(model_fn, X, X_dl, y, train_idx, test_idx, is_dl):
     return mape, pval, preds, y[test_idx]
 
 
-# --- Classification Helper ---
 def run_classification_fold(model_fn, X, X_dl, y, train_idx, test_idx, is_dl):
     model = model_fn()
     X_train = X_dl[train_idx] if is_dl else X[train_idx]
@@ -53,118 +51,122 @@ def run_classification_fold(model_fn, X, X_dl, y, train_idx, test_idx, is_dl):
     return acc, f1, preds, y[test_idx]
 
 
-# --- Regression Experiment ---
 def regression_experiment_run():
-    results = []
+    for n_points in n_points_list:
+        all_results = []
 
-    for transformation in transformation_list:
-        X_random = X_set(random, transformation,n_points)[0]
-        X_data = X_set(balanced, transformation,n_points)[0]
-        y_random = y_set(random)['dmg']
-        y_data = y_set(balanced)['dmg']
+        for transformation in transformation_list:
+            X_random = X_set(random, transformation, n_points)[0]
+            X_data = X_set(balanced, transformation, n_points)[0]
+            y_random = y_set(random)['dmg']
+            y_data = y_set(balanced)['dmg']
 
-        scaler = StandardScaler()
-        X_data = scaler.fit_transform(X_data)
-        X_random = scaler.transform(X_random)
-        y = np.concatenate((y_data, y_random), axis=0)
+            scaler = StandardScaler()
+            X_data = scaler.fit_transform(X_data)
+            X_random = scaler.transform(X_random)
+            y = np.concatenate((y_data, y_random), axis=0)
 
-        for noise_percent in noise_levels:
-            X = np.concatenate((X_data, X_random), axis=0)
-            X = add_noiz(X, noise_percent)
-            X_dl = np.expand_dims(X, axis=-1)
-            input_shape = X.shape[1]
+            for noise_percent in noise_levels:
+                X = np.concatenate((X_data, X_random), axis=0)
+                X = add_noiz(X, noise_percent)
+                X_dl = np.expand_dims(X, axis=-1)
+                input_shape = X.shape[1]
 
-            model_fns = {
-                'LinearRegression': lambda: linear_regression(),
-                'RandomForest': lambda: random_forest_reg(),
-                'MLP': lambda: KerasRegressor(model=keras_mlp_regressor, model__input_shape=(input_shape,), epochs=1, batch_size=64, verbose=0),
-                'CNN': lambda: KerasRegressor(model=keras_cnn_regressor, model__input_shape=(input_shape, 1), epochs=1, batch_size=64, verbose=0),
-                'LSTM': lambda: KerasRegressor(model=keras_lstm_regressor, model__input_shape=(input_shape, 1), epochs=1, batch_size=64, verbose=0),
-            }
+                model_fns = {
+                    'LinearRegression': lambda: linear_regression(),
+                    'RandomForest': lambda: random_forest_reg(),
+                    'MLP': lambda: KerasRegressor(model=keras_mlp_regressor, model__input_shape=(input_shape,), epochs=1, batch_size=64, verbose=0),
+                    'CNN': lambda: KerasRegressor(model=keras_cnn_regressor, model__input_shape=(input_shape, 1), epochs=1, batch_size=64, verbose=0),
+                    'LSTM': lambda: KerasRegressor(model=keras_lstm_regressor, model__input_shape=(input_shape, 1), epochs=1, batch_size=64, verbose=0),
+                }
 
-            cv = KFold(n_splits=5, shuffle=True, random_state=1)
+                cv = KFold(n_splits=5, shuffle=True, random_state=1)
 
-            for name, model_fn in model_fns.items():
-                is_dl = name in ['MLP', 'CNN', 'LSTM']
-                tasks = [
-                    delayed(run_regression_fold)(model_fn, X, X_dl, y, train_idx, test_idx, is_dl)
-                    for train_idx, test_idx in cv.split(X)
-                ]
-                results_fold = Parallel(n_jobs=2, backend='loky')(tasks)
-                mape_scores, pval_scores, preds_list, y_true_list = zip(*results_fold)
+                for name, model_fn in model_fns.items():
+                    is_dl = name in ['MLP', 'CNN', 'LSTM']
+                    tasks = [
+                        delayed(run_regression_fold)(model_fn, X, X_dl, y, train_idx, test_idx, is_dl)
+                        for train_idx, test_idx in cv.split(X)
+                    ]
+                    results_fold = Parallel(n_jobs=2, backend='loky')(tasks)
+                    mape_scores, pval_scores, preds_list, y_true_list = zip(*results_fold)
 
-                results.append({
-                    'transformation': transformation,
-                    'noise_percent': noise_percent,
-                    'model': name,
-                    'mean_mape': np.mean(mape_scores),
-                    'std_mape': np.std(mape_scores),
-                    'pval': np.mean(pval_scores),
-                    'last_fold_preds': preds_list[-1].tolist(),
-                    'last_fold_true': y_true_list[-1].tolist()
-                })
+                    all_results.append({
+                        'n_points': n_points,
+                        'transformation': transformation,
+                        'noise_percent': noise_percent,
+                        'model': name,
+                        'mean_mape': np.mean(mape_scores),
+                        'std_mape': np.std(mape_scores),
+                        'pval': np.mean(pval_scores),
+                        'last_fold_preds': preds_list[-1].tolist(),
+                        'last_fold_true': y_true_list[-1].tolist()
+                    })
 
-    df = pd.DataFrame(results)
-    print(df)
+        df = pd.DataFrame(all_results)
+        print(df)
+        df.to_csv(f'regression_results_n{n_points}.csv', index=False)
 
 
-# --- Classification Experiment ---
 def classification_experiment_run():
-    results = []
+    for n_points in n_points_list:
+        all_results = []
 
-    for transformation in transformation_list:
-        X_data = X_set(balanced, transformation,n_points)[0]
-        X_test = X_set(test, transformation,n_points)[0]
-        y_data = y_set(balanced)['defect']
-        y_test = y_set(test)['defect']
+        for transformation in transformation_list:
+            X_data = X_set(balanced, transformation, n_points)[0]
+            X_test = X_set(test, transformation, n_points)[0]
+            y_data = y_set(balanced)['defect']
+            y_test = y_set(test)['defect']
 
-        label_map = {label: i for i, label in enumerate(set(y_data) | set(y_test))}
-        y_data = np.array([label_map[label] for label in y_data])
-        y_test = np.array([label_map[label] for label in y_test])
+            label_map = {label: i for i, label in enumerate(set(y_data) | set(y_test))}
+            y_data = np.array([label_map[label] for label in y_data])
+            y_test = np.array([label_map[label] for label in y_test])
 
-        scaler = StandardScaler()
-        X_data = scaler.fit_transform(X_data)
-        X_test = scaler.transform(X_test)
-        y = np.concatenate((y_data, y_test), axis=0)
+            scaler = StandardScaler()
+            X_data = scaler.fit_transform(X_data)
+            X_test = scaler.transform(X_test)
+            y = np.concatenate((y_data, y_test), axis=0)
 
-        for noise_percent in noise_levels:
-            X = np.concatenate((X_data, X_test), axis=0)
-            X = add_noiz(X, noise_percent)
-            X_dl = np.expand_dims(X, axis=-1)
-            input_shape = X.shape[1]
+            for noise_percent in noise_levels:
+                X = np.concatenate((X_data, X_test), axis=0)
+                X = add_noiz(X, noise_percent)
+                X_dl = np.expand_dims(X, axis=-1)
+                input_shape = X.shape[1]
 
-            model_fns = {
-                'SVC': lambda: svc(),
-                'RandomForest': lambda: random_forest_clf(),
-                'MLP': lambda: KerasClassifier(model=keras_mlp_classifier, model__input_shape=(input_shape,), epochs=1, batch_size=64, verbose=0),
-                'CNN': lambda: KerasClassifier(model=keras_cnn_classifier, model__input_shape=(input_shape, 1), epochs=1, batch_size=64, verbose=0),
-                'LSTM': lambda: KerasClassifier(model=keras_lstm_classifier, model__input_shape=(input_shape, 1), epochs=1, batch_size=64, verbose=0),
-            }
+                model_fns = {
+                    'SVC': lambda: svc(),
+                    'RandomForest': lambda: random_forest_clf(),
+                    'MLP': lambda: KerasClassifier(model=keras_mlp_classifier, model__input_shape=(input_shape,), epochs=1, batch_size=64, verbose=0),
+                    'CNN': lambda: KerasClassifier(model=keras_cnn_classifier, model__input_shape=(input_shape, 1), epochs=1, batch_size=64, verbose=0),
+                    'LSTM': lambda: KerasClassifier(model=keras_lstm_classifier, model__input_shape=(input_shape, 1), epochs=1, batch_size=64, verbose=0),
+                }
 
-            cv = KFold(n_splits=5, shuffle=True, random_state=1)
+                cv = KFold(n_splits=5, shuffle=True, random_state=1)
 
-            for name, model_fn in model_fns.items():
-                is_dl = name in ['MLP', 'CNN', 'LSTM']
-                tasks = [
-                    delayed(run_classification_fold)(model_fn, X, X_dl, y, train_idx, test_idx, is_dl)
-                    for train_idx, test_idx in cv.split(X)
-                ]
-                results_fold = Parallel(n_jobs=2, backend='loky')(tasks)
-                acc_scores, f1_scores, preds_list, y_true_list = zip(*results_fold)
+                for name, model_fn in model_fns.items():
+                    is_dl = name in ['MLP', 'CNN', 'LSTM']
+                    tasks = [
+                        delayed(run_classification_fold)(model_fn, X, X_dl, y, train_idx, test_idx, is_dl)
+                        for train_idx, test_idx in cv.split(X)
+                    ]
+                    results_fold = Parallel(n_jobs=2, backend='loky')(tasks)
+                    acc_scores, f1_scores, preds_list, y_true_list = zip(*results_fold)
 
-                results.append({
-                    'transformation': transformation,
-                    'noise_percent': noise_percent,
-                    'model': name,
-                    'mean_acc': np.mean(acc_scores),
-                    'std_acc': np.std(acc_scores),
-                    'f1_macro': np.mean(f1_scores),
-                    'last_fold_preds': preds_list[-1].tolist(),
-                    'last_fold_true': y_true_list[-1].tolist()
-                })
+                    all_results.append({
+                        'n_points': n_points,
+                        'transformation': transformation,
+                        'noise_percent': noise_percent,
+                        'model': name,
+                        'mean_acc': np.mean(acc_scores),
+                        'std_acc': np.std(acc_scores),
+                        'f1_macro': np.mean(f1_scores),
+                        'last_fold_preds': preds_list[-1].tolist(),
+                        'last_fold_true': y_true_list[-1].tolist()
+                    })
 
-    df = pd.DataFrame(results)
-    print(df)
+        df = pd.DataFrame(all_results)
+        print(df)
+        df.to_csv(f'classification_results_n{n_points}.csv', index=False)
 
 
 # Run experiments
