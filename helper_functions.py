@@ -43,91 +43,68 @@ the filename as 'damage_file_name', the case study as 'caseStudey', the kind of 
 
 
 '''
-
-def X_set(path,transformation):
-
+def X_set(path, transformation, n_points):
     '''
-    transformations are : 'none','fourier','psd','pwelch','spectrogram','wavelet'
-    
+    transformations: 'none', 'fourier', 'psd', 'pwelch', 'spectrogram', 'wavelet'
+    - For 'none': returns truncated raw time-series (first n_points).
+    - For 'fourier': returns truncated FFT amplitude and frequency vectors (first n_points).
     '''
     import os
     import glob
     import numpy as np
     import pandas as pd
-
+    from helper_functions import fourier  # Make sure fourier is available
 
     sensor_data_list = []
     name_list = []
 
-    # remove .csv from filepath so that it reads the number
-    for filename in sorted(glob.glob(os.path.join(path , "data*"))):
+    # Remove .csv suffix and collect filenames
+    for filename in sorted(glob.glob(os.path.join(path, "data*"))):
         filename = filename.removesuffix('.csv')
         name_list.append(filename)
 
-    #index is the number of the filename
-    sensor_data = pd.DataFrame({'name':name_list})
+    sensor_data = pd.DataFrame({'name': name_list})
     sensor_data['sensor_index_number'] = [int(i.split('_')[-1]) for i in sensor_data['name']]
-
-    #list is sorted according to the index
-    sensor_data = sensor_data.sort_values(by=['sensor_index_number'])
-
-    suffix='.csv'
-    new_names=[]
-
-    #adds .csv to every filename on the list
-    for filename in sensor_data['name']:
-        filename = filename+suffix
-        new_names.append(filename)
-
-    #opens files and creates lists with data
+    sensor_data = sensor_data.sort_values(by='sensor_index_number')
+    new_names = [name + '.csv' for name in sensor_data['name']]
 
     for filename in new_names:
-        df = pd.read_csv(filename,sep=' |,', engine='python').dropna()
+        df = pd.read_csv(filename, sep=' |,', engine='python').dropna()
         sensor_data_list.append(df)
 
     freq_list = []
     power_spectrum_list = []
-    sensor_names = ['s2','s3','s4']
+    sensor_names = ['s2', 's3', 's4']
+
     for sensor in sensor_names:
-        for i in range(0,len(sensor_data_list)):
-            sample_sensor =sensor_data_list[i][sensor]
+        for i in range(len(sensor_data_list)):
+            sample_sensor = sensor_data_list[i][sensor]
+
             if transformation == 'fourier':
-                power_spectrum = fourier(sample_sensor)[0]
-            elif transformation == 'psd':
-                power_spectrum = psd(sample_sensor)[0]
-            elif transformation == 'pwelch':
-                power_spectrum = pwelch(sample_sensor)[0]
-            elif transformation == 'wavelet':
-                power_spectrum = wavelet(sample_sensor)
+                amp, freq = fourier(sample_sensor)
+                amp = amp[:n_points]
+                power_spectrum = amp
+
+                if sensor == 's2':  # Only append freq once per file
+                    freq = freq[:n_points]
+                    freq_list.append(freq)
+
             elif transformation == 'none':
-                power_spectrum = sample_sensor
-            elif transformation == 'spectrogram':
-                power_spectrum = spectrogram(sample_sensor)
-            power_spectrum_list.append(power_spectrum)  
+                sig = sample_sensor.values[:n_points]
+                power_spectrum = sig
 
-    sensor2_vector = []
-    sensor3_vector = []
-    sensor4_vector = []
+            power_spectrum_list.append(power_spectrum)
 
-    bound_1 = int(len(power_spectrum_list)/3)
-    bound_2 = int(2*len(power_spectrum_list)/3)
-    bound_3 = int(len(power_spectrum_list))
+    # Split into sensor vectors
+    num_samples = len(power_spectrum_list) // 3
+    sensor2_vector = power_spectrum_list[0:num_samples]
+    sensor3_vector = power_spectrum_list[num_samples:2 * num_samples]
+    sensor4_vector = power_spectrum_list[2 * num_samples:3 * num_samples]
 
-    if transformation == 'fourier':
-        for i in range(0,bound_1):
-            freq_list.append(fourier(sample_sensor)[1])
+    # Concatenate along feature axis: shape = (samples, 3 * n_points)
+    X = np.concatenate((sensor2_vector, sensor3_vector, sensor4_vector), axis=1)
 
-    for i in range(0,bound_1):
-        sensor2_vector.append(power_spectrum_list[i])
-        
-    for i in range(bound_1,bound_2):
-        sensor3_vector.append(power_spectrum_list[i])
-        
-    for i in range(bound_2,bound_3):
-        sensor4_vector.append(power_spectrum_list[i])
-        
-    X = np.concatenate((sensor2_vector,sensor3_vector,sensor4_vector),axis=1)
-    return X,sensor2_vector,sensor3_vector,sensor4_vector,freq_list
+    return X, sensor2_vector, sensor3_vector, sensor4_vector, freq_list
 
 
 def y_set(path):
@@ -670,22 +647,27 @@ def wavelet(sample):
     #plt.tight_layout()
     #plt.show()
 
-def add_noiz(X_set,mean,stdev):
-
-    '''
-    The input is the output of the 'X_set' function 
-    The output is the output of X_set with noise added
-    '''
-
+def add_noiz(X, noise_percent):
     import numpy as np
-    X_set_new =[]
-    for sample in X_set:
-        noise = np.random.normal(mean,stdev, len(sample))
-        sample = sample+noise
-        X_set_new.append(sample)
+    '''
+    Adds Gaussian noise to X.
+    Handles both 2D numpy arrays and lists of 1D arrays (e.g. from X_set with 'fourier' or 'none').
+    '''
+    if isinstance(X, np.ndarray):
+        # Case 1: 2D numpy array (samples x features)
+        std_dev = np.std(X, axis=0)
+        noise = np.random.randn(*X.shape) * (noise_percent / 100.0) * std_dev
+        return X + noise
 
-    X_set = X_set_new
-    return X_set
+    elif isinstance(X, list) or isinstance(X, tuple):
+        X_noisy = []
+        for sample in X:
+            sample = np.asarray(sample)
+            std_dev = np.std(sample)
+            noise = np.random.randn(*sample.shape) * (noise_percent / 100.0) * std_dev
+            noisy_sample = sample + noise
+            X_noisy.append(noisy_sample)
+        return X_noisy
 
 ########################################################################
 
