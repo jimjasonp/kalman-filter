@@ -15,6 +15,8 @@ CONTENTS
 6)EXPERIMENT RUN
 
 7)TOOLS FOR TUNING
+
+8)EXPERIMENTAL RESULTS EXTRACTION
 '''
 
 
@@ -43,91 +45,68 @@ the filename as 'damage_file_name', the case study as 'caseStudey', the kind of 
 
 
 '''
-
-def X_set(path,transformation):
-
+def X_set(path, transformation, n_points):
     '''
-    transformations are : 'none','fourier','psd','pwelch','spectrogram','wavelet'
-    
+    transformations: 'none', 'fourier', 'psd', 'pwelch', 'spectrogram', 'wavelet'
+    - For 'none': returns truncated raw time-series (first n_points).
+    - For 'fourier': returns truncated FFT amplitude and frequency vectors (first n_points).
     '''
     import os
     import glob
     import numpy as np
     import pandas as pd
-
+    from helper_functions import fourier  # Make sure fourier is available
 
     sensor_data_list = []
     name_list = []
 
-    # remove .csv from filepath so that it reads the number
-    for filename in sorted(glob.glob(os.path.join(path , "data*"))):
+    # Remove .csv suffix and collect filenames
+    for filename in sorted(glob.glob(os.path.join(path, "data*"))):
         filename = filename.removesuffix('.csv')
         name_list.append(filename)
 
-    #index is the number of the filename
-    sensor_data = pd.DataFrame({'name':name_list})
+    sensor_data = pd.DataFrame({'name': name_list})
     sensor_data['sensor_index_number'] = [int(i.split('_')[-1]) for i in sensor_data['name']]
-
-    #list is sorted according to the index
-    sensor_data = sensor_data.sort_values(by=['sensor_index_number'])
-
-    suffix='.csv'
-    new_names=[]
-
-    #adds .csv to every filename on the list
-    for filename in sensor_data['name']:
-        filename = filename+suffix
-        new_names.append(filename)
-
-    #opens files and creates lists with data
+    sensor_data = sensor_data.sort_values(by='sensor_index_number')
+    new_names = [name + '.csv' for name in sensor_data['name']]
 
     for filename in new_names:
-        df = pd.read_csv(filename,sep=' |,', engine='python').dropna()
+        df = pd.read_csv(filename, sep=' |,', engine='python').dropna()
         sensor_data_list.append(df)
 
     freq_list = []
     power_spectrum_list = []
-    sensor_names = ['s2','s3','s4']
+    sensor_names = ['s2', 's3', 's4']
+
     for sensor in sensor_names:
-        for i in range(0,len(sensor_data_list)):
-            sample_sensor =sensor_data_list[i][sensor]
+        for i in range(len(sensor_data_list)):
+            sample_sensor = sensor_data_list[i][sensor]
+
             if transformation == 'fourier':
-                power_spectrum = fourier(sample_sensor)[0]
-            elif transformation == 'psd':
-                power_spectrum = psd(sample_sensor)[0]
-            elif transformation == 'pwelch':
-                power_spectrum = pwelch(sample_sensor)[0]
-            elif transformation == 'wavelet':
-                power_spectrum = wavelet(sample_sensor)
+                amp, freq = fourier(sample_sensor)
+                amp = amp[:n_points]
+                power_spectrum = amp
+
+                if sensor == 's2':  # Only append freq once per file
+                    freq = freq[:n_points]
+                    freq_list.append(freq)
+
             elif transformation == 'none':
-                power_spectrum = sample_sensor
-            elif transformation == 'spectrogram':
-                power_spectrum = spectrogram(sample_sensor)
-            power_spectrum_list.append(power_spectrum)  
+                sig = sample_sensor.values[:n_points]
+                power_spectrum = sig
 
-    sensor2_vector = []
-    sensor3_vector = []
-    sensor4_vector = []
+            power_spectrum_list.append(power_spectrum)
 
-    bound_1 = int(len(power_spectrum_list)/3)
-    bound_2 = int(2*len(power_spectrum_list)/3)
-    bound_3 = int(len(power_spectrum_list))
+    # Split into sensor vectors
+    num_samples = len(power_spectrum_list) // 3
+    sensor2_vector = power_spectrum_list[0:num_samples]
+    sensor3_vector = power_spectrum_list[num_samples:2 * num_samples]
+    sensor4_vector = power_spectrum_list[2 * num_samples:3 * num_samples]
 
-    if transformation == 'fourier':
-        for i in range(0,bound_1):
-            freq_list.append(fourier(sample_sensor)[1])
+    # Concatenate along feature axis: shape = (samples, 3 * n_points)
+    X = np.concatenate((sensor2_vector, sensor3_vector, sensor4_vector), axis=1)
 
-    for i in range(0,bound_1):
-        sensor2_vector.append(power_spectrum_list[i])
-        
-    for i in range(bound_1,bound_2):
-        sensor3_vector.append(power_spectrum_list[i])
-        
-    for i in range(bound_2,bound_3):
-        sensor4_vector.append(power_spectrum_list[i])
-        
-    X = np.concatenate((sensor2_vector,sensor3_vector,sensor4_vector),axis=1)
-    return X,sensor2_vector,sensor3_vector,sensor4_vector,freq_list
+    return X, sensor2_vector, sensor3_vector, sensor4_vector, freq_list
 
 
 def y_set(path):
@@ -670,22 +649,27 @@ def wavelet(sample):
     #plt.tight_layout()
     #plt.show()
 
-def add_noiz(X_set,mean,stdev):
-
-    '''
-    The input is the output of the 'X_set' function 
-    The output is the output of X_set with noise added
-    '''
-
+def add_noiz(X, noise_percent):
     import numpy as np
-    X_set_new =[]
-    for sample in X_set:
-        noise = np.random.normal(mean,stdev, len(sample))
-        sample = sample+noise
-        X_set_new.append(sample)
+    '''
+    Adds Gaussian noise to X.
+    Handles both 2D numpy arrays and lists of 1D arrays (e.g. from X_set with 'fourier' or 'none').
+    '''
+    if isinstance(X, np.ndarray):
+        # Case 1: 2D numpy array (samples x features)
+        std_dev = np.std(X, axis=0)
+        noise = np.random.randn(*X.shape) * (noise_percent / 100.0) * std_dev
+        return X + noise
 
-    X_set = X_set_new
-    return X_set
+    elif isinstance(X, list) or isinstance(X, tuple):
+        X_noisy = []
+        for sample in X:
+            sample = np.asarray(sample)
+            std_dev = np.std(sample)
+            noise = np.random.randn(*sample.shape) * (noise_percent / 100.0) * std_dev
+            noisy_sample = sample + noise
+            X_noisy.append(noisy_sample)
+        return X_noisy
 
 ########################################################################
 
@@ -1177,83 +1161,139 @@ def confusion_matrix_display(y_test,y_pred,model,mode,accuracy):
         plt.show()
 
 
-def regression_results_bar_charts(model_names, mape, std_devs, pvals,ylabel):
-    
-
+def regression_results_bar_charts(model_names, mape, std_devs, pvals, ylabel):
     '''
-    The inputs are the model names, the mape values, the standard deviation values, 
-    the p-value values as lists and the label on y axis.
-    The output is a figure that contains bar charts that compare each models 
-    mape, standard deviation and p-value
+    Plots grouped bar charts comparing base and FFT models with:
+    - Logarithmic y-axis
+    - Proper y-axis ticks in % format
+    - Enlarged figure size
+    - Annotated bar labels with std and p-values
     '''
-    
-    
     import matplotlib.pyplot as plt
     import numpy as np
+    from matplotlib.ticker import FuncFormatter
 
     plt.rcParams.update({'font.size': 16})
     plt.rcParams['lines.linewidth'] = 2.5
-    
+
+    # Convert to numpy arrays
     mape = np.array(mape)
     std_devs = np.array(std_devs)
     pvals = np.array(pvals)
-    x = np.arange(len(model_names))
 
-    plt.figure(figsize=(10, 6))
-    bars = plt.bar(x, mape, capsize=5, color='skyblue', edgecolor='black')
+    # Avoid zero or negative MAPE (log scale can't handle it)
+    mape = np.clip(mape, 0.001, None)
 
-    for i, bar in enumerate(bars):
-        height = bar.get_height()
-        label = f'{mape[i]:.6f} ± {std_devs[i]:.6f}\n(p-value: {pvals[i]:.6f})' # bazw eite to F1: eite to p-value:
-        plt.text(bar.get_x() + bar.get_width()/2, height + 0, label, # dipla sto height bazw +/- kapoion arithmo gia na einai pio omorfo
-                 ha='center', va='bottom', fontsize=16)
+    model_count = len(model_names)
+    x = np.arange(model_count)
+    bar_width = 0.45
 
-    plt.xticks(x, model_names, rotation=45, ha='right')
-    plt.ylabel(ylabel)
-    plt.title('Model performance comparison')
-    plt.ylim(0, max(mape + std_devs) -0.02) # sto telo bazw +/- enan arithmo gia na einai pio omorfo to chart
+    # Enlarged figure size
+    fig, ax = plt.subplots(figsize=(16, 10))
+
+    # Plot bars
+    bars_base = ax.bar(x - bar_width / 2, mape[:, 0], width=bar_width, label='Time',
+                       color='skyblue', edgecolor='black')
+    bars_fft = ax.bar(x + bar_width / 2, mape[:, 1], width=bar_width, label='FFT',
+                      color='salmon', edgecolor='black')
+
+    # Annotate bars
+    for i in range(model_count):
+        for j, (bar_set, color) in enumerate(zip([bars_base, bars_fft], ['skyblue', 'salmon'])):
+            height = bar_set[i].get_height()
+            std = std_devs[i][j]
+            pval = pvals[i][j]
+            label = f'{mape[i][j]:.4f} % ± {std:.4f} %\n(p value: {pval:.2e})'
+            ax.text(bar_set[i].get_x() + bar_set[i].get_width() / 2,
+                    height * 1.1,
+                    label,
+                    ha='center', va='bottom', fontsize=9)
+
+    # Y-axis configuration
+    ax.set_yscale('log')
+
+    # Define specific y-tick values and show as %
+    max_mape = np.max(mape)
+    yticks = [0.5, 1, 2, 5, 10, 20, 50, 100]
+    yticks = [y for y in yticks if y <= max_mape * 1.5]
+    ax.set_yticks(yticks)
+    ax.get_yaxis().set_major_formatter(FuncFormatter(lambda y, _: f'{y:.0f} %'))
+
+    # Other axis settings
+    ax.set_xticks(x)
+    ax.set_xticklabels(model_names, rotation=45, ha='right')
+    ax.set_ylabel(ylabel)
+    ax.set_title('Regression Model Performance Comparison (Time Domain vs. FFT)')
+    ax.grid(True, which='both', axis='y', linestyle='--', alpha=0.7)
+    ax.legend()
+
     plt.tight_layout()
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.show()
 
 
-def classification_results_bar_charts(model_names, accuracies, std_devs, f1_scores,ylabel):
-    
+
+
+
+def class_results_bar_charts(model_names, mape, std_devs, pvals, ylabel):
     '''
+    The inputs are the model names, the mape values, the standard deviation values,
+    the p-value values as lists for both the base models and their FFT counterparts,
+    and the label on y axis.
     
-    The inputs are the model names, the accuracy values, the standard deviation values, the f1 scores as lists and the label on y axis.
-    The output is a figure with bar charts that compare each model's accuracy standard deviation and f1 score
+    This function plots grouped bar charts comparing base and FFT models.
     '''
-    
+
     import matplotlib.pyplot as plt
     import numpy as np
 
     plt.rcParams.update({'font.size': 16})
     plt.rcParams['lines.linewidth'] = 2.5
 
-    accuracies = np.array(accuracies)
+    # Convert to numpy arrays
+    mape = np.array(mape)
     std_devs = np.array(std_devs)
-    f1_scores = np.array(f1_scores)
+    pvals = np.array(pvals)
 
-    x = np.arange(len(model_names))
+    # Ensure all arrays are 2D: shape (n_models, 2) -> [base, fft]
+    # Example: mape[i] = [base_val, fft_val]
+    model_count = len(model_names)
+    x = np.arange(model_count)
 
-    plt.figure(figsize=(10, 6))
-    bars = plt.bar(x, accuracies, capsize=5, color='skyblue', edgecolor='black')
+    bar_width = 0.45
 
-    for i, bar in enumerate(bars):
-        height = bar.get_height()
-        label = f'{accuracies[i]:.4f} ± {std_devs[i]:.4f}\n(F1: {f1_scores[i]:.4f})'
-        plt.text(bar.get_x() + bar.get_width()/2, height + 0.01, label,
-                 ha='center', va='bottom', fontsize=16)
+    fig, ax = plt.subplots(figsize=(16, 10))
 
-    plt.xticks(x, model_names, rotation=45, ha='right')
-    plt.ylabel(ylabel)
-    plt.title('Model performance comparison')
-    plt.ylim(0, max(accuracies + std_devs) + 0.1)
+    # Plot bars for base models
+    bars_base = ax.bar(x - bar_width/2, mape[:, 0], width=bar_width, label='Time', 
+                       color='skyblue', edgecolor='black', capsize=5)
+
+    # Plot bars for FFT models
+    bars_fft = ax.bar(x + bar_width/2, mape[:, 1], width=bar_width, label='FFT',
+                      color='salmon', edgecolor='black', capsize=5)
+
+    # Add text annotations
+    for i in range(model_count):
+        for j, (bar_set, color) in enumerate(zip([bars_base, bars_fft], ['skyblue', 'salmon'])):
+            height = bar_set[i].get_height()
+            std = std_devs[i][j]
+            pval = pvals[i][j]
+            label = f'{mape[i][j]:.4f} ± {std:.4f} \n(F1 macro: {pval:.4f})'
+            ax.text(bar_set[i].get_x() + bar_set[i].get_width() / 2,
+                    height + 0.01,
+                    label,
+                    ha='center', va='bottom', fontsize=10.5)
+
+    # Set axis details
+    ax.set_xticks(x)
+    ax.set_xticklabels(model_names, rotation=45, ha='right')
+    ax.set_ylabel(ylabel)
+    ax.set_title('Classification Model Performance Comparison (Time Domain vs. FFT)')
+    ax.set_ylim(0, np.max(mape + std_devs) + 0.1)
+    ax.grid(axis='y', linestyle='--', alpha=0.7)
+    ax.legend()
+
     plt.tight_layout()
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.show()
-
 
 ########################################################################
 
@@ -1371,6 +1411,115 @@ def grid_search_loo(model,X_train,y_train):
 
     print(grid.best_params_)
     print(grid.best_score_)
+
+
+########################################################################
+
+########################################################################
+
+########################################################################
+
+########################################################################
+
+########################################################################
+
+
+
+
+
+'''
+
+7)TOOLS FOR TUNING
+
+---> Regression data extraction (extract_regression_data)
+Extracts data from regression experiments, specifically for bar chart function: regression_results_bar_charts
+
+
+
+---> Classification data extraction (extract_classification_data)
+Extracts data from Classification experiments, specifically for bar chart function: class_results_bar_charts
+
+'''
+
+def extract_regression_data(csv_path):
+    import pandas as pd
+    import numpy as np
+    """
+    Extracts model names, MAPE values, standard deviations, and p-values
+    from a CSV file formatted with both time-domain and FFT results.
+
+    Returns:
+        model_names (List[str])
+        mape (np.ndarray): shape (n_models, 2)
+        std_devs (np.ndarray): shape (n_models, 2)
+        pvals (np.ndarray): shape (n_models, 2)
+    """
+    df = pd.read_csv(csv_path)
+
+    # Identify unique models (base names without transformation)
+    base_models = df['model'].unique()
+
+    # Identify if FFT vs time-domain comparison is via 'transformation' column
+    transformations = df['transformation'].unique()
+    assert set(transformations).issuperset({'none', 'fourier'}), \
+        "Expected 'transformation' column to contain 'none' and 'fft'"
+
+    model_names = []
+    mape = []
+    std_devs = []
+    pvals = []
+
+    for model in base_models:
+        base_row = df[(df['model'] == model) & (df['transformation'] == 'none')].iloc[0]
+        fft_row = df[(df['model'] == model) & (df['transformation'] == 'fourier')].iloc[0]
+
+        model_names.append(model)
+        mape.append([base_row['mean_mape'] * 100, fft_row['mean_mape'] * 100])
+        std_devs.append([base_row['std_mape'] * 100, fft_row['std_mape'] * 100])
+        pvals.append([base_row['pval'], fft_row['pval']])
+
+    return model_names, np.array(mape), np.array(std_devs), np.array(pvals)
+
+
+def extract_classification_data(csv_path):
+    import pandas as pd
+    import numpy as np
+    """
+    Extracts model names, accuracy values, standard deviations, and F1 scores
+    from a CSV file formatted with both time-domain and FFT results.
+
+    Returns:
+        model_names (List[str])
+        acc (np.ndarray): shape (n_models, 2)
+        std_devs (np.ndarray): shape (n_models, 2)
+        f1_macro (np.ndarray): shape (n_models, 2)
+    """
+    df = pd.read_csv(csv_path)
+
+    # Check if transformation column includes both 'none' and 'fft'
+    transformations = df['transformation'].unique()
+    assert set(transformations).issuperset({'none', 'fourier'}), \
+        "Expected 'transformation' column to contain 'none' and 'fft'"
+
+    base_models = df['model'].unique()
+
+    model_names = []
+    acc = []
+    std_devs = []
+    f1_scores = []
+
+    for model in base_models:
+        # Get rows for base and FFT version
+        base_row = df[(df['model'] == model) & (df['transformation'] == 'none')].iloc[0]
+        fft_row = df[(df['model'] == model) & (df['transformation'] == 'fourier')].iloc[0]
+
+        model_names.append(model)
+        acc.append([base_row['mean_acc'], fft_row['mean_acc']])
+        std_devs.append([base_row['std_acc'], fft_row['std_acc']])
+        f1_scores.append([base_row['f1_macro'], fft_row['f1_macro']])
+
+    return model_names, np.array(acc), np.array(std_devs), np.array(f1_scores)
+
 
 
 ########################################################################
