@@ -854,6 +854,12 @@ the inputs are the model names, the mape values, the standard deviation values, 
 ---> classification results bar chart (classification_results_bar_charts)
 the inputs are the model names, the mape values, the standard deviation values, the p-value values as lists and the label on y axis.
 
+---> parity plots it can either save or show the plots using a csv with results (parity_plot_from_csv)
+the inputs are the csv containing the results and the mode 'save' or 'show' plots are made for all results in that csv file
+
+---> confusion matrices it can either save or show the plots using a csv with results (confusion_matrix_display_from_csv)
+the inputs are the csv containing the results and the mode 'save' or 'show' plots are made for all results in that csv file
+
 '''
 
 
@@ -1257,6 +1263,108 @@ def class_results_bar_charts(model_names, mape, std_devs, pvals, ylabel, noise, 
 
     plt.tight_layout()
     plt.show()
+
+
+
+def parity_plot_from_csv(csv_path, mode='show'):
+
+    import pandas as pd
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import ast
+    import os
+
+    df = pd.read_csv(csv_path)
+
+    for idx, row in df.iterrows():
+        model = row['model']
+        transformation = row['transformation']
+        noise = row['noise_percent']
+        n_points = row['n_points']
+        mean_mape = row['mean_mape']
+        std_mape = row['std_mape']
+        pval = row['pval']
+
+        y_test = np.array(ast.literal_eval(row['last_fold_true']))
+        y_pred = np.array(ast.literal_eval(row['last_fold_preds']))
+
+        plt.figure()
+        plt.scatter(y_test, y_pred, color='r', label='Predicted vs True')
+        min_val = min(np.min(y_test), np.min(y_pred))
+        max_val = max(np.max(y_test), np.max(y_pred))
+        plt.plot([min_val, max_val], [min_val, max_val], linestyle='--', color='gray', label='y = x')
+
+        plt.xlabel('True Values')
+        plt.ylabel('Predicted Values')
+        plt.title(f'Parity Plot - {model} | Noise: {noise}% | Transform: {transformation} | N={n_points}')
+
+        legend_text = (
+            f'MAPE: {100*mean_mape:.6f}% ± {100*std_mape:.6f}%\n'
+            f'P-value: {pval:.2e}'
+        )
+        plt.legend(title=legend_text, loc='upper left', fontsize='small', title_fontsize='small')
+
+        if mode == 'save':
+            filename = f'{model}_parity_n{n_points}_noise{noise}_transf_{transformation}.png'.replace(" ", "_")
+            plt.savefig(filename, bbox_inches='tight')
+            plt.close()
+        else:
+            plt.show()
+
+
+
+
+def confusion_matrix_display_from_csv(csv_path, mode='show'):
+    
+    from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+    import pandas as pd
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import ast
+    import os
+    
+    df = pd.read_csv(csv_path)
+
+    for idx, row in df.iterrows():
+        model = row['model']
+        transformation = row['transformation']
+        noise = row['noise_percent']
+        n_points = row['n_points']
+        mean_acc = row['mean_acc']
+        std_acc = row['std_acc']
+        f1 = row['f1_macro']
+
+        y_test = np.array(ast.literal_eval(row['last_fold_true']))
+        y_pred = np.array(ast.literal_eval(row['last_fold_preds']))
+
+        cm = confusion_matrix(y_test, y_pred)
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+        fig, ax = plt.subplots(figsize=(6, 6))
+        disp.plot(ax=ax, colorbar=False)
+
+        # Title
+        plt.title(f'Confusion Matrix - {model} | Noise: {noise}% | Transform: {transformation} | N={n_points}')
+
+        # Legend box in top-right
+        legend_text = (
+            f'Accuracy: {mean_acc:.2f} ± {std_acc:.2f}\n'
+            f'F1 Macro: {f1:.2f}'
+        )
+        plt.text(
+            1.05, 0.95, legend_text,
+            transform=ax.transAxes,
+            fontsize=9,
+            verticalalignment='top',
+            bbox=dict(boxstyle="round", facecolor="white", edgecolor="gray", alpha=0.9)
+        )
+
+        if mode == 'save':
+            filename = f'{model}_conf_matrix_n{n_points}_noise{noise}_transf_{transformation}.png'.replace(" ", "_")
+            plt.savefig(filename, bbox_inches='tight')
+            plt.close()
+        else:
+            plt.show()
+
 
 ########################################################################
 
