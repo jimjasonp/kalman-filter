@@ -837,12 +837,12 @@ Two arrows show the excitation frequency and the dominant harmonic frequency.
 takes as input the data path and the sample indexes for every kind of defect(dd,df,dm,all) and plots 4
 subplots of the harmonics of every defect mode for one sensor
 
----> parity plots it can either save or show the plot (parity_plot)
+---> parity plots (parity_plot)
 the input is y_test and y_pred and the model and the mode 'save' or 'show'
 In 'save' mode the plot is saved and in 'show' mode the plot is shown
 
 
----> confusion matrix gia to classification task (confusion_matrix_display)
+---> confusion matrix (confusion_matrix_display)
 the input is y_test and y_pred and the model and the mode 'save' or 'show'
 In 'save' mode the plot is saved and in 'show' mode the plot is shown
 
