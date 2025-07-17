@@ -838,27 +838,29 @@ takes as input the data path and the sample indexes for every kind of defect(dd,
 subplots of the harmonics of every defect mode for one sensor
 
 ---> parity plots it can either save or show the plot (parity_plot)
-pairnei san input to y_test to y_pred to montelo kai to mode dhladh an thelw na kanw save h aplws na dw to plot
-bgazei to parity plot tou y_test me to y_pred kai eite to kanei save eite to deixnei
+the input is y_test and y_pred and the model and the mode 'save' or 'show'
+In 'save' mode the plot is saved and in 'show' mode the plot is shown
 
 
 ---> confusion matrix gia to classification task (confusion_matrix_display)
-pairnei san input ta y_test,y_pred,model,mode,accuracy kai bgazei to confusion matrix me titlo
-to onoma tou montelou kai to accuracy tou. To montelo prepei na einai function kai to mode einai 
-eite show eite save.
+the input is y_test and y_pred and the model and the mode 'save' or 'show'
+In 'save' mode the plot is saved and in 'show' mode the plot is shown
 
 
 ---> regression results bar chart (regression_results_bar_charts)
-the inputs are the model names, the mape values, the standard deviation values, the p-value values as lists and the label on y axis.
+the inputs are the model names, the mape values, the standard deviation values, the p-value values as lists, the label on y axis, the noise level and the number of datapoints.
 
 ---> classification results bar chart (classification_results_bar_charts)
-the inputs are the model names, the mape values, the standard deviation values, the p-value values as lists and the label on y axis.
+the inputs are the model names, the mape values, the standard deviation values, the p-value values as lists, the label on y axis, the noise level and the number of datapoints.
 
----> parity plots it can either save or show the plots using a csv with results (parity_plot_from_csv)
+---> parity plots (parity_plot_from_csv)
 the inputs are the csv containing the results and the mode 'save' or 'show' plots are made for all results in that csv file
+In 'save' mode the plot is saved and in 'show' mode the plot is shown
 
----> confusion matrices it can either save or show the plots using a csv with results (confusion_matrix_display_from_csv)
+
+---> confusion matrices (confusion_matrix_display_from_csv)
 the inputs are the csv containing the results and the mode 'save' or 'show' plots are made for all results in that csv file
+In 'save' mode the plot is saved and in 'show' mode the plot is shown
 
 '''
 
@@ -1168,6 +1170,10 @@ def confusion_matrix_display(y_test,y_pred,model,mode,accuracy):
 
 
 def regression_results_bar_charts(model_names, mape, std_devs, pvals, ylabel, noise, n_points):
+    '''
+    the inputs are the model names, the mape values, the standard deviation values, the p-value values as lists the label on y axis, the noise level and the number of datapoints.
+    
+    '''
     import matplotlib.pyplot as plt
     import numpy as np
     from matplotlib.ticker import FuncFormatter
@@ -1221,6 +1227,10 @@ def regression_results_bar_charts(model_names, mape, std_devs, pvals, ylabel, no
 
 
 def class_results_bar_charts(model_names, mape, std_devs, pvals, ylabel, noise, n_points):
+    '''
+    the inputs are the model names, the mape values, the standard deviation values, the p-value values as lists the label on y axis, the noise level and the number of datapoints.
+    
+    '''
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -1267,6 +1277,10 @@ def class_results_bar_charts(model_names, mape, std_devs, pvals, ylabel, noise, 
 
 
 def parity_plot_from_csv(csv_path, mode='show'):
+    '''
+    
+    the input is the csv path that contains the results from all the experiments and the mode 'save' or 'show'
+    '''
 
     import pandas as pd
     import numpy as np
@@ -1315,7 +1329,10 @@ def parity_plot_from_csv(csv_path, mode='show'):
 
 
 def confusion_matrix_display_from_csv(csv_path, mode='show'):
+    '''
+    the input is the csv path that contains the results from all the experiments and the mode 'save' or 'show'
     
+    '''
     from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
     import pandas as pd
     import numpy as np
