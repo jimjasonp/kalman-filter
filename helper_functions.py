@@ -837,16 +837,6 @@ Two arrows show the excitation frequency and the dominant harmonic frequency.
 takes as input the data path and the sample indexes for every kind of defect(dd,df,dm,all) and plots 4
 subplots of the harmonics of every defect mode for one sensor
 
----> parity plots (parity_plot)
-the input is y_test and y_pred and the model and the mode 'save' or 'show'
-In 'save' mode the plot is saved and in 'show' mode the plot is shown
-
-
----> confusion matrix (confusion_matrix_display)
-the input is y_test and y_pred and the model and the mode 'save' or 'show'
-In 'save' mode the plot is saved and in 'show' mode the plot is shown
-
-
 ---> regression results bar chart (regression_results_bar_charts)
 the inputs are the model names, the mape values, the standard deviation values, the p-value values as lists, the label on y axis, the noise level and the number of datapoints.
 
@@ -862,6 +852,8 @@ In 'save' mode the plot is saved and in 'show' mode the plot is shown
 the inputs are the csv containing the results and the mode 'save' or 'show' plots are made for all results in that csv file
 In 'save' mode the plot is saved and in 'show' mode the plot is shown
 
+---> plot signal and fft with noise(plot_signal_with_variants)
+the input is the csv path of the sample and the output is a figure with two subpplots each containing the plots of signal and the fft with their three noise levels 
 '''
 
 
@@ -1106,69 +1098,6 @@ def every_defect_mode_harmonics_plot(path,dd_index,df_index,all_index,dm_index):
 
 
 
-def parity_plot(y_test,y_pred,model,mode):
-    
-    
-    '''
-    The inputs are y_test, y_pred the model and the mode 
-    In 'save' mode the plot is saved and in 'show' mode the plot is shown
-    The output is the parity plot of y_test and y_pred 
-
-    the model has to be a function
-
-    '''
-
-    import matplotlib.pyplot as plt
-
-    plt.scatter(y_test,y_pred,color='r')
-    xpoints = ypoints = plt.xlim()
-    plt.plot(xpoints, ypoints)
-    plt.xlabel('Test Values')
-    plt.ylabel('Predicted Values')
-    if model.__name__ =='mlp' : name = 'MLP'
-    if model.__name__ =='linear_regression' : name = 'Linear Regression'
-    if model.__name__ =='decision_tree_reg' : name = 'Decision Trees'
-    if model.__name__ =='cnn_reg' : name = 'CNN'
-    plt.title(f'Parity plot of {name}')
-    plt.legend(["y_values", "y=x"], loc="lower right")
-    if mode=='save':
-        plt.savefig(f'{name}_parity_plot.png')
-        plt.close('all')
-        plt.clf()
-    elif mode =='show':
-        plt.show()
-
-
-def confusion_matrix_display(y_test,y_pred,model,mode,accuracy):
-    
-    '''
-    The inputs are y_test,y_pred,model,mode, the accuracy of the predictions 
-    In 'save' mode the plot is saved and in 'show' mode the plot is shown
-    The output is the confusion matrix and its title says the model's name and accuracy
-    
-    The model has to be a function
-    '''
-    
-    import matplotlib.pyplot as plt
-    from sklearn.metrics import confusion_matrix,ConfusionMatrixDisplay
-
-   
-    if model.__name__ =='svc' : name = 'Support Vector Machines'
-    if model.__name__ =='random_forest_clf' : name = 'Random Forest'
-    if model.__name__ =='xgb_clf' : name = 'XGB'
-    if model.__name__ =='cnn_class' : name = 'CNN'
-    cm = confusion_matrix(y_test,y_pred)
-    disp = ConfusionMatrixDisplay(cm)
-    disp.plot()
-    plt.title(f'Confusion matrix of {name} with accuracy = {accuracy}')
-    if mode=='save':
-        plt.savefig(f'{name}_confusion_matrix.png')
-        plt.close('all')
-        plt.clf()
-    elif mode =='show':
-        plt.show()
-
-
 def regression_results_bar_charts(model_names, mape, std_devs, pvals, ylabel, noise, n_points):
     '''
     the inputs are the model names, the mape values, the standard deviation values, the p-value values as lists the label on y axis, the noise level and the number of datapoints.
@@ -1276,17 +1205,22 @@ def class_results_bar_charts(model_names, mape, std_devs, pvals, ylabel, noise, 
 
 
 
-def parity_plot_from_csv(csv_path, mode='show'):
+def parity_plot_from_csv(csv_path, mode='show', font_scale=1.5):
     '''
-    
-    the input is the csv path that contains the results from all the experiments and the mode 'save' or 'show'
+    The input is the csv path that contains the results from all the experiments
+    and the mode 'save' or 'show'
     '''
-
     import pandas as pd
     import numpy as np
     import matplotlib.pyplot as plt
     import ast
     import os
+
+    # Font sizes
+    title_size = 12 * font_scale
+    axis_title_size = 12 * font_scale
+    tick_label_size = 10 * font_scale
+    legend_size = 10 * font_scale
 
     df = pd.read_csv(csv_path)
 
@@ -1299,39 +1233,53 @@ def parity_plot_from_csv(csv_path, mode='show'):
         std_mape = row['std_mape']
         pval = row['pval']
 
+        # Modify the unit for n_points based on transformation
+        if transformation == 'none':
+            n_points_str = f'{n_points} μs'
+        elif transformation == 'fourier':
+            n_points_str = f'{n_points} kHz'
+        else:
+            n_points_str = str(n_points)
+
         y_test = np.array(ast.literal_eval(row['last_fold_true']))
         y_pred = np.array(ast.literal_eval(row['last_fold_preds']))
 
-        plt.figure()
-        plt.scatter(y_test, y_pred, color='r', label='Predicted vs True')
+        plt.figure(figsize=(6, 6))  # Square figure
+        plt.scatter(y_test, y_pred, color='r', label='Predicted vs True', s=30)
         min_val = min(np.min(y_test), np.min(y_pred))
         max_val = max(np.max(y_test), np.max(y_pred))
         plt.plot([min_val, max_val], [min_val, max_val], linestyle='--', color='gray', label='y = x')
 
-        plt.xlabel('True Values')
-        plt.ylabel('Predicted Values')
-        plt.title(f'Parity Plot - {model} | Noise: {noise}% | Transform: {transformation} | N={n_points}')
+        plt.xlabel('True Values', fontsize=axis_title_size)
+        plt.ylabel('Predicted Values', fontsize=axis_title_size)
+        plt.title(
+            f'Parity Plot - {model} | Noise: {noise}% | Transform: {transformation} | N={n_points_str}',
+            fontsize=title_size
+        )
+        plt.xticks(fontsize=tick_label_size)
+        plt.yticks(fontsize=tick_label_size)
+
+        # Force square aspect ratio
+        plt.gca().set_aspect('equal', adjustable='box')
 
         legend_text = (
             f'MAPE: {100*mean_mape:.6f}% ± {100*std_mape:.6f}%\n'
             f'P-value: {pval:.2e}'
         )
-        plt.legend(title=legend_text, loc='upper left', fontsize='small', title_fontsize='small')
+        plt.legend(title=legend_text, loc='upper left', fontsize=legend_size, title_fontsize=legend_size)
 
         if mode == 'save':
             filename = f'{model}_parity_n{n_points}_noise{noise}_transf_{transformation}.png'.replace(" ", "_")
-            plt.savefig(filename, bbox_inches='tight')
+            plt.savefig(filename, bbox_inches='tight', dpi=300)
             plt.close()
         else:
             plt.show()
 
 
-
-
-def confusion_matrix_display_from_csv(csv_path, mode='show'):
+def confusion_matrix_display_from_csv(csv_path, mode='show', font_scale=1.5):
     '''
-    the input is the csv path that contains the results from all the experiments and the mode 'save' or 'show'
-    
+    The input is the csv path that contains the results from all the experiments
+    and the mode 'save' or 'show'
     '''
     from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
     import pandas as pd
@@ -1340,6 +1288,12 @@ def confusion_matrix_display_from_csv(csv_path, mode='show'):
     import ast
     import os
     
+    # Font sizes
+    title_size = 14 * font_scale
+    axis_title_size = 12 * font_scale
+    tick_label_size = 10 * font_scale
+    legend_size = 10 * font_scale
+
     df = pd.read_csv(csv_path)
 
     for idx, row in df.iterrows():
@@ -1351,6 +1305,14 @@ def confusion_matrix_display_from_csv(csv_path, mode='show'):
         std_acc = row['std_acc']
         f1 = row['f1_macro']
 
+        # Modify the unit for n_points based on transformation
+        if transformation == 'none':
+            n_points_str = f'{n_points} μs'
+        elif transformation == 'fourier':
+            n_points_str = f'{n_points} kHz'
+        else:
+            n_points_str = str(n_points)
+
         y_test = np.array(ast.literal_eval(row['last_fold_true']))
         y_pred = np.array(ast.literal_eval(row['last_fold_preds']))
 
@@ -1359,10 +1321,18 @@ def confusion_matrix_display_from_csv(csv_path, mode='show'):
         fig, ax = plt.subplots(figsize=(6, 6))
         disp.plot(ax=ax, colorbar=False)
 
-        # Title
-        plt.title(f'Confusion Matrix - {model} | Noise: {noise}% | Transform: {transformation} | N={n_points}')
+        # Increase axis label font sizes
+        ax.set_xlabel("Predicted label", fontsize=axis_title_size)
+        ax.set_ylabel("True label", fontsize=axis_title_size)
 
-        # Legend box in top-right
+        # Increase tick label font size
+        ax.tick_params(axis='both', labelsize=tick_label_size)
+
+        plt.title(
+            f'Confusion Matrix - {model} | Noise: {noise}% | Transform: {transformation} | N={n_points_str}',
+            fontsize=title_size
+        )
+
         legend_text = (
             f'Accuracy: {mean_acc:.2f} ± {std_acc:.2f}\n'
             f'F1 Macro: {f1:.2f}'
@@ -1370,17 +1340,106 @@ def confusion_matrix_display_from_csv(csv_path, mode='show'):
         plt.text(
             1.05, 0.95, legend_text,
             transform=ax.transAxes,
-            fontsize=9,
+            fontsize=legend_size,
             verticalalignment='top',
             bbox=dict(boxstyle="round", facecolor="white", edgecolor="gray", alpha=0.9)
         )
 
         if mode == 'save':
             filename = f'{model}_conf_matrix_n{n_points}_noise{noise}_transf_{transformation}.png'.replace(" ", "_")
-            plt.savefig(filename, bbox_inches='tight')
+            plt.savefig(filename, bbox_inches='tight', dpi=300)
             plt.close()
         else:
             plt.show()
+
+
+def plot_signal_with_variants(csv_path: str,
+                              signal_column: str = "s4",
+                              time_column: str = "time",
+                              noise_levels=(2, 5, 10),
+                              alpha_levels=(0.6, 0.4, 0.2),
+                              linewidths=(3.0, 3.5, 4.0),
+                              time_color: str = "blue",
+                              fft_color: str = "orange",
+                              save: bool = False,
+                              show: bool = True,
+                              output_filename: str = None,
+                              seed: int = 42):
+    
+    '''
+    
+    the input is the csv path of the sample 
+    
+    '''
+
+    import os
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+
+    if not os.path.isfile(csv_path):
+        raise FileNotFoundError(f"CSV file not found: {csv_path}")
+
+
+    
+
+    df = pd.read_csv(csv_path, sep=r"\s+")
+
+    if signal_column not in df.columns:
+        raise ValueError(f"Column '{signal_column}' not found. Available: {list(df.columns)}")
+    if time_column not in df.columns:
+        raise ValueError(f"Column '{time_column}' not found. Available: {list(df.columns)}")
+
+    time = df[time_column].values
+    signal = df[signal_column].values
+    np.random.seed(seed)
+
+    fig, axes = plt.subplots(2, 1, figsize=(10, 10))
+
+    # --- TIME DOMAIN ---
+    axes[0].plot(time, signal, color=time_color, linewidth=2.0, label="Original Signal", zorder=10)
+    for nl, alpha, lw in zip(noise_levels, alpha_levels, linewidths):
+        noisy_signal = add_noiz(signal, nl)
+        axes[0].plot(time, noisy_signal, color=time_color, alpha=alpha, linewidth=lw, label=f"Noise {nl}%", zorder=5)
+
+    axes[0].set_xlabel("Time (ms)", fontsize=12)
+    axes[0].set_ylabel("Amplitude", fontsize=12)
+    axes[0].set_title(f"Time-Domain Signal of {signal_column}", fontsize=14)
+    axes[0].legend(fontsize=10)
+    axes[0].grid(alpha=0.3)
+
+    # --- FFT (same as your original script) ---
+    power_orig, freqs = fourier(signal)
+    mask = freqs >= 0  # Keep only positive frequencies
+    freqs = freqs[mask]
+    power_orig = power_orig[mask]
+    axes[1].plot(freqs, power_orig, color=fft_color, linewidth=2.0, label="Original FFT", zorder=10)
+
+    for nl, alpha, lw in zip(noise_levels, alpha_levels, linewidths):
+        noisy_signal = add_noiz(signal, nl)
+        power_noisy, freqs_noisy = fourier(noisy_signal)
+        axes[1].plot(freqs_noisy[mask], power_noisy[mask], color=fft_color, alpha=alpha, linewidth=lw, label=f"Noise {nl}%", zorder=5)
+
+    axes[1].set_xlabel("Frequency (kHz)", fontsize=12)
+    axes[1].set_ylabel("Log Amplitude", fontsize=12)
+    axes[1].set_title(f"FFT of {signal_column} ", fontsize=14)
+    axes[1].legend(fontsize=10)
+    axes[1].grid(alpha=0.3)
+
+    plt.tight_layout()
+
+    if save:
+        if output_filename is None:
+            base_name = os.path.splitext(os.path.basename(csv_path))[0]
+            output_filename = f"{base_name}_{signal_column}_signal_fft_noise.png"
+        plt.savefig(output_filename, dpi=300)
+        print(f"Figure saved to: {output_filename}")
+
+    if show:
+        plt.show()
+    else:
+        plt.close()
 
 
 ########################################################################
