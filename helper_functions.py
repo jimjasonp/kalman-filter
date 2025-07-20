@@ -35,7 +35,7 @@ CONTENTS
 1) X AND Y SET CREATORS
 
 ---> x set creator (X_set)
-Takes as input the path and a transformation. The outputs are five:the first is the concatenated amplitude of all three sensors
+Takes as input the path and a transformation the number of points and the noise percentage. The outputs are five:the first is the concatenated amplitude of all three sensors
 the second,third and fourth are the amplitudes of the second,third and fourth sensor, the fifth is the frequency 
 
 
@@ -45,22 +45,22 @@ the filename as 'damage_file_name', the case study as 'caseStudey', the kind of 
 
 
 '''
-def X_set(path, transformation, n_points):
+def X_set(path, transformation, n_points, noise_percent=None):
     '''
-    transformations: 'none', 'fourier', 'psd', 'pwelch', 'spectrogram', 'wavelet'
+    transformations: 'none', 'fourier'
     - For 'none': returns truncated raw time-series (first n_points).
     - For 'fourier': returns truncated FFT amplitude and frequency vectors (first n_points).
+    - Noise (if noise_percent is provided) is added before transformation.
     '''
     import os
     import glob
     import numpy as np
     import pandas as pd
-    from helper_functions import fourier  # Make sure fourier is available
+    from helper_functions import fourier, add_noiz  # Ensure add_noiz is imported
 
     sensor_data_list = []
     name_list = []
 
-    # Remove .csv suffix and collect filenames
     for filename in sorted(glob.glob(os.path.join(path, "data*"))):
         filename = filename.removesuffix('.csv')
         name_list.append(filename)
@@ -80,7 +80,10 @@ def X_set(path, transformation, n_points):
 
     for sensor in sensor_names:
         for i in range(len(sensor_data_list)):
-            sample_sensor = sensor_data_list[i][sensor]
+            sample_sensor = sensor_data_list[i][sensor].values[:n_points]
+
+            if noise_percent is not None:
+                sample_sensor = add_noiz(sample_sensor.reshape(1, -1), noise_percent).flatten()
 
             if transformation == 'fourier':
                 amp, freq = fourier(sample_sensor)
@@ -92,22 +95,18 @@ def X_set(path, transformation, n_points):
                     freq_list.append(freq)
 
             elif transformation == 'none':
-                sig = sample_sensor.values[:n_points]
-                power_spectrum = sig
+                power_spectrum = sample_sensor
 
             power_spectrum_list.append(power_spectrum)
 
-    # Split into sensor vectors
     num_samples = len(power_spectrum_list) // 3
     sensor2_vector = power_spectrum_list[0:num_samples]
     sensor3_vector = power_spectrum_list[num_samples:2 * num_samples]
     sensor4_vector = power_spectrum_list[2 * num_samples:3 * num_samples]
 
-    # Concatenate along feature axis: shape = (samples, 3 * n_points)
     X = np.concatenate((sensor2_vector, sensor3_vector, sensor4_vector), axis=1)
 
     return X, sensor2_vector, sensor3_vector, sensor4_vector, freq_list
-
 
 def y_set(path):
     
@@ -1287,7 +1286,16 @@ def confusion_matrix_display_from_csv(csv_path, mode='show', font_scale=1.5):
     import matplotlib.pyplot as plt
     import ast
     import os
-    
+
+    # Custom label mapping
+    label_mapping = {
+        0: "all defect modes",
+        1: "dd",
+        2: "df",
+        3: "dm"
+    }
+    class_labels = [label_mapping[i] for i in sorted(label_mapping.keys())]
+
     # Font sizes
     title_size = 14 * font_scale
     axis_title_size = 12 * font_scale
@@ -1313,11 +1321,15 @@ def confusion_matrix_display_from_csv(csv_path, mode='show', font_scale=1.5):
         else:
             n_points_str = str(n_points)
 
+        # Load predicted and true labels
         y_test = np.array(ast.literal_eval(row['last_fold_true']))
         y_pred = np.array(ast.literal_eval(row['last_fold_preds']))
 
-        cm = confusion_matrix(y_test, y_pred)
-        disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+        # Compute confusion matrix
+        cm = confusion_matrix(y_test, y_pred, labels=sorted(label_mapping.keys()))
+
+        # Display with class names
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_labels)
         fig, ax = plt.subplots(figsize=(6, 6))
         disp.plot(ax=ax, colorbar=False)
 
@@ -1351,6 +1363,7 @@ def confusion_matrix_display_from_csv(csv_path, mode='show', font_scale=1.5):
             plt.close()
         else:
             plt.show()
+
 
 
 def plot_signal_with_variants(csv_path: str,
